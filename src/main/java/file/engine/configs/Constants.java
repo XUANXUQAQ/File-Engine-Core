@@ -1,21 +1,12 @@
 package file.engine.configs;
 
-import file.engine.utils.system.properties.IsDebug;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
 
 /**
  * 项目使用到的常量
  */
 @Slf4j
 public class Constants {
-    public static String version;
-
-    public static String buildVersion;
-
     // 数据库中最大的分表ID  list[0-40]
     public static final int MAX_TABLE_NUM = 40;
 
@@ -29,24 +20,6 @@ public class Constants {
     public static final String DATABASE_INTEGRITY_CHECK_FILE = "user/databaseIntegrityCheck.dat";
 
     public static final int MAX_TASK_EXIST_TIME = 5 * 60 * 1000;
-
-    static {
-        version = "0";
-        buildVersion = "Debug";
-        if (!IsDebug.isDebug()) {
-            /*
-             * 读取maven自动生成的版本信息
-             */
-            Properties properties = new Properties();
-            try (InputStream projectInfo = Constants.class.getResourceAsStream("/project-info.properties")) {
-                properties.load(projectInfo);
-                version = properties.getProperty("project.version");
-                buildVersion = properties.getProperty("project.build.version");
-            } catch (IOException e) {
-                log.error("error: {}", e.getMessage(), e);
-            }
-        }
-    }
 
     private Constants() {
         throw new RuntimeException("not allowed");

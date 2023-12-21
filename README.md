@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/documentation-yes-brightgreen"/>
 </div>
 
-## 🏠如何编译构建本项目
+## 编译该项目
 
 ---
 
