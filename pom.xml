@@ -63,7 +63,6 @@
                                     </mainClass>
                                 </manifest>
                             </archive>
-                            <finalName>File-Engine</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
@@ -87,11 +86,6 @@
             <version>2.10.1</version>
         </dependency>
         <dependency>
-            <groupId>com.github.oshi</groupId>
-            <artifactId>oshi-core-java11</artifactId>
-            <version>6.4.3</version>
-        </dependency>
-        <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.44.0.0</version>
@@ -100,11 +94,6 @@
             <groupId>io.github.biezhi</groupId>
             <artifactId>TinyPinyin</artifactId>
             <version>2.0.3.RELEASE</version>
-        </dependency>
-        <dependency>
-            <groupId>net.java.dev.jna</groupId>
-            <artifactId>jna</artifactId>
-            <version>5.13.0</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

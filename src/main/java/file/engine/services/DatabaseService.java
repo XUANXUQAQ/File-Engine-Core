@@ -23,7 +23,6 @@ import file.engine.event.handler.impl.stop.CloseEvent;
 import file.engine.services.utils.AdminUtil;
 import file.engine.services.utils.PathMatchUtil;
 import file.engine.services.utils.StringUtf8SumUtil;
-import file.engine.services.utils.SystemInfoUtil;
 import file.engine.services.utils.connection.SQLiteUtil;
 import file.engine.utils.Bit;
 import file.engine.utils.ProcessUtil;
@@ -355,10 +354,7 @@ public class DatabaseService {
                             createGpuCache(isStopCreateCache, createGPUCacheThreshold);
                         }
                     }
-                    final double memoryUsage = SystemInfoUtil.getMemoryUsage();
-                    if (memoryUsage * 100 < createMemoryThreshold) {
-                        createMemoryCache(isStopCreateCache);
-                    }
+                    createMemoryCache(isStopCreateCache);
                 } else {
                     if (isEnableGPUAccelerate) {
                         final int gpuMemUsage = GPUAccelerator.INSTANCE.getGPUMemUsage();
@@ -387,7 +383,6 @@ public class DatabaseService {
         log.info("添加缓存");
         String availableDisks = AllConfigs.getInstance().getAvailableDisks();
         ConcurrentLinkedQueue<String> tableQueueByPriority = initTableQueueByPriority();
-        // 系统内存使用少于70%
         String[] disks = RegexUtil.comma.split(availableDisks);
         LinkedHashMap<String, Integer> tableNeedCache = scanDatabaseAndSelectCacheTable(disks,
                 tableQueueByPriority,
@@ -2057,7 +2052,7 @@ public class DatabaseService {
         if (databaseService.status.get() == Constants.Enums.DatabaseStatus._TEMP) {
             return;
         }
-        if (databaseService.casSetStatus(Constants.Enums.DatabaseStatus.NORMAL, Constants.Enums.DatabaseStatus.VACUUM)) {
+        if (!databaseService.casSetStatus(Constants.Enums.DatabaseStatus.NORMAL, Constants.Enums.DatabaseStatus.VACUUM)) {
             throw new RuntimeException("databaseService status设置VACUUM状态失败");
         }
         //执行VACUUM命令
@@ -2073,7 +2068,7 @@ public class DatabaseService {
                 }
             }
         }
-        if (databaseService.casSetStatus(Constants.Enums.DatabaseStatus.VACUUM, Constants.Enums.DatabaseStatus.NORMAL)) {
+        if (!databaseService.casSetStatus(Constants.Enums.DatabaseStatus.VACUUM, Constants.Enums.DatabaseStatus.NORMAL)) {
             throw new RuntimeException("databaseService status从VACUUM修改为NORMAL失败");
         }
     }
