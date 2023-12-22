@@ -6,7 +6,7 @@ import file.engine.annotation.EventRegister;
 import file.engine.configs.AllConfigs;
 import file.engine.configs.Constants;
 import file.engine.dllInterface.FileMonitor;
-import file.engine.dllInterface.GetHandle;
+import file.engine.dllInterface.WindowCheck;
 import file.engine.dllInterface.GetWindowsKnownFolder;
 import file.engine.dllInterface.IsLocalDisk;
 import file.engine.dllInterface.gpu.GPUAccelerator;
@@ -337,9 +337,8 @@ public class DatabaseService {
             final Supplier<Boolean> isStartSaveCache =
                     () -> (System.currentTimeMillis() - startCheckInfo.startCheckTimeMills > checkTimeInterval &&
                             status.get() == Constants.Enums.DatabaseStatus.NORMAL &&
-                            !GetHandle.INSTANCE.isForegroundFullscreen()) ||
+                            !WindowCheck.INSTANCE.isForegroundFullscreen()) ||
                             (isDatabaseUpdated.get());
-            final int createMemoryThreshold = 70;
             final int createGPUCacheThreshold = 50;
             final int freeGPUCacheThreshold = 70;
             while (eventManagement.notMainExit()) {
@@ -554,7 +553,7 @@ public class DatabaseService {
                         .getConfigEntity()
                         .getAdvancedConfigEntity()
                         .getSearchWarmupTimeoutInMills()) {
-                    if (!GetHandle.INSTANCE.isForegroundFullscreen()) {
+                    if (!WindowCheck.INSTANCE.isForegroundFullscreen()) {
                         String keywordsTemp = getRandomString(2) + ";" +
                                 getRandomString(2) + ";" +
                                 getRandomString(2);
@@ -2171,7 +2170,7 @@ public class DatabaseService {
                 long startCheckInvalidCacheTime = System.currentTimeMillis();
                 final long checkInterval = 10 * 60 * 1000; // 10min
                 while (eventManagement.notMainExit()) {
-                    if (System.currentTimeMillis() - startCheckInvalidCacheTime > checkInterval && !GetHandle.INSTANCE.isForegroundFullscreen()) {
+                    if (System.currentTimeMillis() - startCheckInvalidCacheTime > checkInterval && !WindowCheck.INSTANCE.isForegroundFullscreen()) {
                         startCheckInvalidCacheTime = System.currentTimeMillis();
                         HashSet<String> keysToRemove = new HashSet<>(invalidCacheKeys);
                         for (var eachKey : keysToRemove) {
@@ -2200,7 +2199,7 @@ public class DatabaseService {
                 long lastCheckTime = System.currentTimeMillis();
                 while (eventManagement.notMainExit()) {
                     if (databaseService.getStatus() == Constants.Enums.DatabaseStatus.NORMAL &&
-                            !GetHandle.INSTANCE.isForegroundFullscreen() &&
+                            !WindowCheck.INSTANCE.isForegroundFullscreen() &&
                             (!recordsToAdd.isEmpty() || !recordsToRemove.isEmpty()) &&
                             System.currentTimeMillis() - lastCheckTime > allConfigs.getConfigEntity().getUpdateTimeLimit() * 1000L) {
                         lastCheckTime = System.currentTimeMillis();

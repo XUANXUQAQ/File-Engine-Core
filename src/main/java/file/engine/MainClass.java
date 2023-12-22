@@ -1,7 +1,7 @@
 package file.engine;
 
 import file.engine.configs.Constants;
-import file.engine.dllInterface.GetHandle;
+import file.engine.dllInterface.WindowCheck;
 import file.engine.event.handler.Event;
 import file.engine.event.handler.EventManagement;
 import file.engine.event.handler.impl.BootSystemEvent;
@@ -71,7 +71,7 @@ public class MainClass {
     private static void initializeDllInterface() throws ClassNotFoundException {
         Class.forName("file.engine.dllInterface.FileMonitor");
         Class.forName("file.engine.dllInterface.IsLocalDisk");
-        Class.forName("file.engine.dllInterface.GetHandle");
+        Class.forName("file.engine.dllInterface.WindowCheck");
     }
 
     private static void setSystemProperties() {
@@ -163,7 +163,7 @@ public class MainClass {
             }
             // 更新标志isNeedUpdate为true，则更新
             // 数据库损坏或者重启次数超过3次，需要重建索引
-            if ((isDatabaseOutDated && !GetHandle.INSTANCE.isForegroundFullscreen()) || isNeedUpdate) {
+            if ((isDatabaseOutDated && !WindowCheck.INSTANCE.isForegroundFullscreen()) || isNeedUpdate) {
                 isDatabaseOutDated = false;
                 isNeedUpdate = false;
                 log.info("Updating index");
@@ -241,7 +241,7 @@ public class MainClass {
         checkMd5AndReplace("user/isLocalDisk.dll", "/win32-native/isLocalDisk.dll");
         checkMd5AndReplace("user/fileSearcherUSN.exe", "/win32-native/fileSearcherUSN.exe");
         checkMd5AndReplace("user/sqlite3.dll", "/win32-native/sqlite3.dll");
-        checkMd5AndReplace("user/getHandle.dll", "/win32-native/getHandle.dll");
+        checkMd5AndReplace("user/windowCheck.dll", "/win32-native/windowCheck.dll");
         checkMd5AndReplace("user/getWindowsKnownFolder.dll", "/win32-native/getWindowsKnownFolder.dll");
         checkMd5AndReplace("user/sqliteJDBC.dll", "/win32-native/sqliteJDBC.dll");
         checkMd5AndReplace("user/cudaAccelerator.dll", "/win32-native/cudaAccelerator.dll");
