@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 public class Core {
 
     private static volatile DatabaseService.SearchTask currentSearchTask;
+    private static Javalin server;
 
     @EventListener(listenClass = BootSystemEvent.class)
     private static void startServer(Event event) {
@@ -106,7 +107,15 @@ public class Core {
                         ctx.queryParam("oldSuffix"), ctx.queryParam("newSuffix"), Integer.parseInt(Objects.requireNonNull(ctx.queryParam("priority")))
                 )))
                 .delete("/clearSuffixPriority", ctx -> eventManager.putEvent(new ClearSuffixPriorityMapEvent()));
+        server = app;
         app.start(allConfigs.getConfigEntity().getPort());
+    }
+
+    @EventListener(listenClass = CloseEvent.class)
+    private static void close(Event event) {
+        if (server != null) {
+            server.close();
+        }
     }
 
     private static HashMap<String, Object> getSearchResults() {
