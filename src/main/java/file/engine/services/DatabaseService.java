@@ -1941,7 +1941,7 @@ public class DatabaseService {
                 }
                 // 开始进行搜索
                 GPUAccelerator.INSTANCE.resetAllResultStatus();
-                GPUAccelerator.INSTANCE.match(
+                String[] matchedResults = GPUAccelerator.INSTANCE.match(
                         searchInfo.searchCase,
                         searchInfo.isIgnoreCase,
                         searchInfo.searchText,
@@ -1949,17 +1949,19 @@ public class DatabaseService {
                         searchInfo.keywordsLowerCase,
                         searchInfo.isKeywordPath,
                         MAX_RESULTS,
-                        Math.max(2, AllConfigs.getInstance().getConfigEntity().getSearchThreadNumber() / 4),
-                        (key, path) -> {
-                            if (FileUtil.isFileNotExist(path)) {
-                                databaseService.removeFileFromDatabase(path);
-                                return;
-                            }
-                            if (searchTask.tempResultsSet.add(path)) {
-                                searchTask.resultCounter.getAndIncrement();
-                                searchTask.tempResults.add(path);
-                            }
-                        });
+                        Math.max(2, AllConfigs.getInstance().getConfigEntity().getSearchThreadNumber() / 4));
+                if (matchedResults != null) {
+                    for (String path : matchedResults) {
+                        if (FileUtil.isFileNotExist(path)) {
+                            databaseService.removeFileFromDatabase(path);
+                            return;
+                        }
+                        if (searchTask.tempResultsSet.add(path)) {
+                            searchTask.resultCounter.getAndIncrement();
+                            searchTask.tempResults.add(path);
+                        }
+                    }
+                }
                 SearchTask.isGpuThreadRunning.set(false);
             }, false);
         }

@@ -1,7 +1,5 @@
 package file.engine.dllInterface.gpu;
 
-import java.util.function.BiConsumer;
-
 public interface IGPUAccelerator {
 
     /**
@@ -20,17 +18,15 @@ public interface IGPUAccelerator {
      * @param isKeywordPath          保存keywords中的关键字是路径判断还是文件名判断
      * @param maxResultNumber        最大匹配结果数量限制
      * @param resultCollectThreadNum 收集GPU搜索结果并发线程数
-     * @param resultCollector        有一个结果匹配后的回调方法
      */
-    void match(String[] searchCase,
-               boolean isIgnoreCase,
-               String searchText,
-               String[] keywords,
-               String[] keywordsLowerCase,
-               boolean[] isKeywordPath,
-               int maxResultNumber,
-               int resultCollectThreadNum,
-               BiConsumer<String, String> resultCollector);
+    String[] match(String[] searchCase,
+                   boolean isIgnoreCase,
+                   String searchText,
+                   String[] keywords,
+                   String[] keywordsLowerCase,
+                   boolean[] isKeywordPath,
+                   int maxResultNumber,
+                   int resultCollectThreadNum);
 
     /**
      * 判断GPU加速是否可用

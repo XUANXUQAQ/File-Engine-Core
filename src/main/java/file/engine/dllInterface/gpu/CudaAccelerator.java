@@ -1,7 +1,6 @@
 package file.engine.dllInterface.gpu;
 
 import java.nio.file.Path;
-import java.util.function.BiConsumer;
 
 enum CudaAccelerator implements IGPUAccelerator {
     INSTANCE;
@@ -19,15 +18,14 @@ enum CudaAccelerator implements IGPUAccelerator {
 
     public native void resetAllResultStatus();
 
-    public native void match(String[] searchCase,
-                             boolean isIgnoreCase,
-                             String searchText,
-                             String[] keywords,
-                             String[] keywordsLowerCase,
-                             boolean[] isKeywordPath,
-                             int maxResultNumber,
-                             int resultCollectThreadNum,
-                             BiConsumer<String, String> resultCollector);
+    public native String[] match(String[] searchCase,
+                                 boolean isIgnoreCase,
+                                 String searchText,
+                                 String[] keywords,
+                                 String[] keywordsLowerCase,
+                                 boolean[] isKeywordPath,
+                                 int maxResultNumber,
+                                 int resultCollectThreadNum);
 
     public boolean isGPUAvailableOnSystem() {
         if (isCudaLoaded) {

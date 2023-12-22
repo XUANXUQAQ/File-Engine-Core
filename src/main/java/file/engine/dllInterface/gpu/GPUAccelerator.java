@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.BiConsumer;
 
 @Slf4j
 public enum GPUAccelerator {
@@ -57,29 +56,27 @@ public enum GPUAccelerator {
      * @param keywordsLowerCase 搜索关键字（小写字母）防止重复计算
      * @param isKeywordPath     与上方的搜索关键字一一对应，记录关键字是文件名关键字还是文件路径关键字
      * @param maxResultNumber   最多匹配数量
-     * @param resultCollector   匹配回调函数
      * @see file.engine.services.utils.PathMatchUtil
      */
-    public void match(String[] searchCase,
-                      boolean isIgnoreCase,
-                      String searchText,
-                      String[] keywords,
-                      String[] keywordsLowerCase,
-                      boolean[] isKeywordPath,
-                      int maxResultNumber,
-                      int resultCollectThreadNum,
-                      BiConsumer<String, String> resultCollector) {
+    public String[] match(String[] searchCase,
+                          boolean isIgnoreCase,
+                          String searchText,
+                          String[] keywords,
+                          String[] keywordsLowerCase,
+                          boolean[] isKeywordPath,
+                          int maxResultNumber,
+                          int resultCollectThreadNum) {
         if (gpuAccelerator != null) {
-            gpuAccelerator.match(searchCase,
+            return gpuAccelerator.match(searchCase,
                     isIgnoreCase,
                     searchText,
                     keywords,
                     keywordsLowerCase,
                     isKeywordPath,
                     maxResultNumber,
-                    resultCollectThreadNum,
-                    resultCollector);
+                    resultCollectThreadNum);
         }
+        return null;
     }
 
     /**

@@ -19,6 +19,7 @@
 #include <dxgi.h>
 #include <pdh.h>
 #include <unordered_map>
+#include <concurrent_vector.h>
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "pdh.lib")
 
@@ -29,7 +30,7 @@ bool has_cache(const std::string& key);
 void add_records_to_cache(const std::string& key, const std::vector<std::string>& records);
 void remove_records_from_cache(const std::string& key, std::vector<std::string>& records);
 void generate_search_case(JNIEnv* env, std::vector<std::string>& search_case_vec, jobjectArray search_case);
-void collect_results(JNIEnv* thread_env, jobject result_collector, std::atomic_uint& result_counter,
+void collect_results(std::atomic_uint& result_counter, concurrency::concurrent_vector<std::string>& result_container,
                      unsigned max_results, const std::vector<std::string>& search_case_vec);
 bool is_record_repeat(const std::string& record, const list_cache* cache);
 void release_all();
@@ -183,16 +184,16 @@ JNIEXPORT void JNICALL Java_file_engine_dllInterface_gpu_OpenclAccelerator_stopC
 /*
  * Class:     file_engine_dllInterface_gpu_OpenclAccelerator
  * Method:    match
- * Signature: ([Ljava/lang/String;ZLjava/lang/String;[Ljava/lang/String;[Ljava/lang/String;[ZIILjava/util/function/BiConsumer;)V
+ * Signature: ([Ljava/lang/String;ZLjava/lang/String;[Ljava/lang/String;[Ljava/lang/String;[ZII)[Ljava/lang/String;
  */
-JNIEXPORT void JNICALL Java_file_engine_dllInterface_gpu_OpenclAccelerator_match
+JNIEXPORT jobjectArray JNICALL Java_file_engine_dllInterface_gpu_OpenclAccelerator_match
 (JNIEnv* env, jobject, jobjectArray search_case, jboolean is_ignore_case, jstring search_text,
  jobjectArray keywords, jobjectArray keywords_lower, jbooleanArray is_keyword_path, jint max_results,
- jint result_collect_thread_num, jobject result_collector)
+ jint result_collect_thread_num)
 {
     if (cache_map.empty())
     {
-        return;
+        return nullptr;
     }
     std::unique_lock ulck(cache_lock);
     //生成搜索条件 search_case_vec
@@ -206,8 +207,9 @@ JNIEXPORT void JNICALL Java_file_engine_dllInterface_gpu_OpenclAccelerator_match
     if (keywords_length > MAX_KEYWORDS_NUMBER)
     {
         fprintf(stderr, "too many keywords.\n");
-        return;
+        return nullptr;
     }
+    concurrency::concurrent_vector<std::string> ret_value;
     std::vector<std::string> keywords_vec;
     std::vector<std::string> keywords_lower_vec;
     bool is_keyword_path_ptr[MAX_KEYWORDS_NUMBER]{false};
@@ -251,7 +253,7 @@ JNIEXPORT void JNICALL Java_file_engine_dllInterface_gpu_OpenclAccelerator_match
                 fprintf(stderr, "get thread JNIEnv ptr failed");
                 return;
             }
-            collect_results(thread_env, result_collector, result_counter, max_results, search_case_vec);
+            collect_results(result_counter, ret_value, max_results, search_case_vec);
             jvm->DetachCurrentThread();
         };
         collect_threads_vec.emplace_back(collect_func);
@@ -263,7 +265,7 @@ JNIEXPORT void JNICALL Java_file_engine_dllInterface_gpu_OpenclAccelerator_match
                                      keywords_vec,
                                      keywords_lower_vec,
                                      is_keyword_path_ptr);
-    collect_results(env, result_collector, result_counter, max_results, search_case_vec);
+    collect_results(result_counter, ret_value, max_results, search_case_vec);
     for (auto&& each : collect_threads_vec)
     {
         if (each.joinable())
@@ -276,6 +278,14 @@ JNIEXPORT void JNICALL Java_file_engine_dllInterface_gpu_OpenclAccelerator_match
     {
         delete event_ptr;
     }
+    const auto ret_array = env->NewObjectArray(static_cast<jsize>(ret_value.size()), env->FindClass("java/lang/String"), nullptr);
+    size_t count = 0;
+    for (auto&& each_path : ret_value)
+    {
+        env->SetObjectArrayElement(ret_array, static_cast<jsize>(count), env->NewStringUTF(each_path.c_str()));
+        ++count;
+    }
+    return ret_array;
 }
 
 /*
@@ -552,12 +562,9 @@ JNIEXPORT jint JNICALL Java_file_engine_dllInterface_gpu_OpenclAccelerator_getGP
 /**
  * \brief 将显卡计算的结果保存到hashmap中
  */
-void collect_results(JNIEnv* thread_env, jobject result_collector, std::atomic_uint& result_counter,
+void collect_results(std::atomic_uint& result_counter, concurrency::concurrent_vector<std::string>& result_container,
                      const unsigned max_results, const std::vector<std::string>& search_case_vec)
 {
-    const jclass biconsumer_class = thread_env->GetObjectClass(result_collector);
-    const jmethodID collector = thread_env->GetMethodID(biconsumer_class, "accept",
-                                                        "(Ljava/lang/Object;Ljava/lang/Object;)V");
     bool all_complete;
     const auto stop_func = [&]
     {
@@ -575,11 +582,7 @@ void collect_results(JNIEnv* thread_env, jobject result_collector, std::atomic_u
         {
             is_results_number_exceed = true;
         }
-        auto record_jstring = thread_env->NewStringUTF(_matched_record_str);
-        auto key_jstring = thread_env->NewStringUTF(_key.c_str());
-        thread_env->CallVoidMethod(result_collector, collector, key_jstring, record_jstring);
-        thread_env->DeleteLocalRef(record_jstring);
-        thread_env->DeleteLocalRef(key_jstring);
+        result_container.push_back(_matched_record_str);
         ++*matched_number;
     };
     const auto cl_queue = current_device.get_cl_queue();
@@ -671,7 +674,6 @@ void collect_results(JNIEnv* thread_env, jobject result_collector, std::atomic_u
 #ifdef DEBUG_OUTPUT
 	std::cout << "stop collect." << std::endl;
 #endif
-    thread_env->DeleteLocalRef(biconsumer_class);
 }
 
 /**
