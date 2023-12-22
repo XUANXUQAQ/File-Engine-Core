@@ -2,7 +2,6 @@ package file.engine.dllInterface.gpu;
 
 import java.nio.file.Path;
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 
 enum OpenclAccelerator implements IGPUAccelerator {
     INSTANCE;
@@ -49,7 +48,7 @@ enum OpenclAccelerator implements IGPUAccelerator {
 
     public native boolean isCacheExist(String key);
 
-    public native void initCache(String key, Supplier<String> recordSupplier);
+    public native void initCache(String key, String[] records);
 
     public native void addRecordsToCache(String key, Object[] records);
 

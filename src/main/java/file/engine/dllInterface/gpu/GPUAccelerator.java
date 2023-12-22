@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 
 @Slf4j
 public enum GPUAccelerator {
@@ -155,12 +154,12 @@ public enum GPUAccelerator {
     /**
      * 添加一个缓存
      *
-     * @param key            缓存key
-     * @param recordSupplier supplier
+     * @param key     缓存key
+     * @param records records
      */
-    public void initCache(String key, Supplier<String> recordSupplier) {
+    public void initCache(String key, String[] records) {
         if (gpuAccelerator != null) {
-            gpuAccelerator.initCache(key, recordSupplier);
+            gpuAccelerator.initCache(key, records);
         }
     }
 

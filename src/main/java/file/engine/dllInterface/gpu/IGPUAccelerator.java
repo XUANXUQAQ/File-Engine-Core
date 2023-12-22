@@ -1,7 +1,6 @@
 package file.engine.dllInterface.gpu;
 
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 
 public interface IGPUAccelerator {
 
@@ -79,10 +78,10 @@ public interface IGPUAccelerator {
     /**
      * 添加缓存到GPU显存
      *
-     * @param key            缓存key
-     * @param recordSupplier 字符串supplier，由GPU加速dll通过jni进行调用，防止字符串过多导致OOM
+     * @param key     缓存key
+     * @param records 缓存
      */
-    void initCache(String key, Supplier<String> recordSupplier);
+    void initCache(String key, String[] records);
 
     /**
      * 向某个缓存添加数据

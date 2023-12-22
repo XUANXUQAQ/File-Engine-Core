@@ -74,10 +74,10 @@ JNIEXPORT jboolean JNICALL Java_file_engine_dllInterface_gpu_CudaAccelerator_isC
 /*
  * Class:     file_engine_dllInterface_gpu_CudaAccelerator
  * Method:    initCache
- * Signature: (Ljava/lang/String;Ljava/util/function/Supplier;)V
+ * Signature: (Ljava/lang/String;[Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_file_engine_dllInterface_gpu_CudaAccelerator_initCache
-  (JNIEnv *, jobject, jstring, jobject);
+  (JNIEnv *, jobject, jstring, jobjectArray);
 
 /*
  * Class:     file_engine_dllInterface_gpu_CudaAccelerator

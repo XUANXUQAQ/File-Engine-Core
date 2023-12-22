@@ -1,0 +1,778 @@
+[
+  {
+    "name": "[Lorg.eclipse.jetty.servlet.ServletMapping",
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.slf4j.impl.StaticLoggerBinder",
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.fasterxml.jackson.databind.ObjectMapper",
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "de.nerden.samples.graal.Test",
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.google.gson.Gson"
+  },
+  {
+    "name": "file.engine.configs.AdvancedConfigEntity",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "file.engine.configs.AllConfigs",
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "checkConfigsEvent",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "setAllConfigsEvent",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "shutdownListener",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "file.engine.configs.ConfigEntity",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "file.engine.controller.Core",
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "close",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "startServer",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "file.engine.dllInterface.FileMonitor"
+  },
+  {
+    "name": "file.engine.dllInterface.IsLocalDisk"
+  },
+  {
+    "name": "file.engine.dllInterface.WindowCheck"
+  },
+  {
+    "name": "file.engine.services.DatabaseService",
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "addToCacheEvent",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "addToSuffixPriorityMapEvent",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "checkDatabaseEmpty",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "databaseServiceInit",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "deleteFromCacheEvent",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "deleteFromSuffixPriorityMapEvent",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "flushFileChangesToDatabase",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "initAllDatabases",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "optimizeDatabaseEvent",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "prepareSearchEvent",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "restartEvent",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "setGpuDevice",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "startMonitorDiskEvent",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "startSearchEvent",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "stopSearchEvent",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "updateDatabaseEvent",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "updateSuffixPriorityEvent",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "file.engine.services.DatabaseService$GPUCacheService",
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "addToGPUMemory",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "clearCacheGPU",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "removeFromGPUMemory",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      },
+      {
+        "name": "startThread",
+        "parameterTypes": [
+          "file.engine.event.handler.Event"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.beans.PropertyVetoException"
+  },
+  {
+    "name": "java.lang.Boolean",
+    "methods": [
+      {
+        "name": "valueOf",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Byte",
+    "methods": [
+      {
+        "name": "valueOf",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Class",
+    "methods": [
+      {
+        "name": "getRecordComponents",
+        "parameterTypes": []
+      },
+      {
+        "name": "isRecord",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Double",
+    "methods": [
+      {
+        "name": "valueOf",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Float",
+    "methods": [
+      {
+        "name": "valueOf",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Integer",
+    "methods": [
+      {
+        "name": "valueOf",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Long",
+    "methods": [
+      {
+        "name": "valueOf",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Object",
+    "queryAllPublicMethods": true
+  },
+  {
+    "name": "java.lang.ObjectBeanInfo"
+  },
+  {
+    "name": "java.lang.ObjectCustomizer"
+  },
+  {
+    "name": "java.lang.Short",
+    "methods": [
+      {
+        "name": "valueOf",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.lang.System",
+    "methods": [
+      {
+        "name": "getSecurityManager",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Thread",
+    "fields": [
+      {
+        "name": "threadLocalRandomProbe"
+      }
+    ],
+    "methods": [
+      {
+        "name": "getContextClassLoader",
+        "parameterTypes": []
+      },
+      {
+        "name": "isVirtual",
+        "parameterTypes": []
+      },
+      {
+        "name": "ofVirtual",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Thread$Builder$OfVirtual",
+    "methods": [
+      {
+        "name": "name",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "unstarted",
+        "parameterTypes": [
+          "java.lang.Runnable"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.lang.management.ManagementFactory",
+    "methods": [
+      {
+        "name": "getRuntimeMXBean",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.management.RuntimeMXBean",
+    "methods": [
+      {
+        "name": "getUptime",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.reflect.RecordComponent",
+    "methods": [
+      {
+        "name": "getName",
+        "parameterTypes": []
+      },
+      {
+        "name": "getType",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.security.AccessController",
+    "methods": [
+      {
+        "name": "doPrivileged",
+        "parameterTypes": [
+          "java.security.PrivilegedAction"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.security.SecureRandomParameters"
+  },
+  {
+    "name": "java.sql.Date"
+  },
+  {
+    "name": "java.sql.SQLException",
+    "fields": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  {
+    "name": "java.util.HashMap",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.util.ImmutableCollections$ListN",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.util.LinkedHashSet",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.ConcurrentLinkedQueue",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.Executors",
+    "methods": [
+      {
+        "name": "newThreadPerTaskExecutor",
+        "parameterTypes": [
+          "java.util.concurrent.ThreadFactory"
+        ]
+      },
+      {
+        "name": "newVirtualThreadPerTaskExecutor",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.ForkJoinTask",
+    "fields": [
+      {
+        "name": "aux"
+      },
+      {
+        "name": "status"
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.atomic.AtomicBoolean",
+    "fields": [
+      {
+        "name": "value"
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.atomic.AtomicMarkableReference",
+    "fields": [
+      {
+        "name": "pair"
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.atomic.AtomicReference",
+    "fields": [
+      {
+        "name": "value"
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.atomic.Striped64",
+    "fields": [
+      {
+        "name": "base"
+      },
+      {
+        "name": "cellsBusy"
+      }
+    ]
+  },
+  {
+    "name": "jdk.internal.misc.Unsafe"
+  },
+  {
+    "name": "kotlin.SafePublicationLazyImpl",
+    "fields": [
+      {
+        "name": "_value"
+      }
+    ]
+  },
+  {
+    "name": "org.apache.log4j.Appender",
+    "queryAllPublicMethods": true
+  },
+  {
+    "name": "org.apache.log4j.AppenderSkeleton",
+    "queryAllPublicMethods": true,
+    "methods": [
+      {
+        "name": "setThreshold",
+        "parameterTypes": [
+          "org.apache.log4j.Priority"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.apache.log4j.AppenderSkeletonBeanInfo"
+  },
+  {
+    "name": "org.apache.log4j.AppenderSkeletonCustomizer"
+  },
+  {
+    "name": "org.apache.log4j.ConsoleAppender",
+    "queryAllPublicMethods": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      },
+      {
+        "name": "setTarget",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.apache.log4j.ConsoleAppenderBeanInfo"
+  },
+  {
+    "name": "org.apache.log4j.ConsoleAppenderCustomizer"
+  },
+  {
+    "name": "org.apache.log4j.FileAppender",
+    "queryAllPublicMethods": true,
+    "methods": [
+      {
+        "name": "setAppend",
+        "parameterTypes": [
+          "boolean"
+        ]
+      },
+      {
+        "name": "setFile",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.apache.log4j.FileAppenderBeanInfo"
+  },
+  {
+    "name": "org.apache.log4j.FileAppenderCustomizer"
+  },
+  {
+    "name": "org.apache.log4j.Layout",
+    "queryAllPublicMethods": true
+  },
+  {
+    "name": "org.apache.log4j.LayoutBeanInfo"
+  },
+  {
+    "name": "org.apache.log4j.LayoutCustomizer"
+  },
+  {
+    "name": "org.apache.log4j.Log4jLoggerFactory"
+  },
+  {
+    "name": "org.apache.log4j.PatternLayout",
+    "queryAllPublicMethods": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      },
+      {
+        "name": "setConversionPattern",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.apache.log4j.PatternLayoutBeanInfo"
+  },
+  {
+    "name": "org.apache.log4j.PatternLayoutCustomizer"
+  },
+  {
+    "name": "org.apache.log4j.RollingFileAppender",
+    "queryAllPublicMethods": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      },
+      {
+        "name": "setMaxBackupIndex",
+        "parameterTypes": [
+          "int"
+        ]
+      },
+      {
+        "name": "setMaxFileSize",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.apache.log4j.RollingFileAppenderBeanInfo"
+  },
+  {
+    "name": "org.apache.log4j.RollingFileAppenderCustomizer"
+  },
+  {
+    "name": "org.apache.log4j.WriterAppender",
+    "queryAllPublicMethods": true
+  },
+  {
+    "name": "org.apache.log4j.WriterAppenderBeanInfo"
+  },
+  {
+    "name": "org.apache.log4j.WriterAppenderCustomizer"
+  },
+  {
+    "name": "org.apache.log4j.spi.OptionHandler",
+    "queryAllPublicMethods": true
+  },
+  {
+    "name": "org.eclipse.jetty.util.TypeUtil",
+    "methods": [
+      {
+        "name": "getClassLoaderLocation",
+        "parameterTypes": [
+          "java.lang.Class"
+        ]
+      },
+      {
+        "name": "getCodeSourceLocation",
+        "parameterTypes": [
+          "java.lang.Class"
+        ]
+      },
+      {
+        "name": "getModuleLocation",
+        "parameterTypes": [
+          "java.lang.Class"
+        ]
+      },
+      {
+        "name": "getSystemClassLoaderLocation",
+        "parameterTypes": [
+          "java.lang.Class"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.slf4j.impl.StaticLoggerBinder"
+  },
+  {
+    "name": "org.slf4j.spi.SLF4JServiceProvider"
+  },
+  {
+    "name": "org.sqlite.JDBC"
+  },
+  {
+    "name": "sun.security.provider.DRBG",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.security.SecureRandomParameters"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.MD5",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.SHA",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.security.provider.SHA2$SHA256",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  }
+]

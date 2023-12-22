@@ -1,0 +1,69 @@
+{
+  "resources":{
+  "includes":[{
+    "pattern":"\\QMETA-INF/maven/io.javalin/javalin/pom.properties\\E"
+  }, {
+    "pattern":"\\QMETA-INF/maven/org.xerial/sqlite-jdbc/pom.properties\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/io.javalin.rendering.JavalinRenderer$FileRendererLoader\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.lang.System$LoggerFinder\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.nio.channels.spi.SelectorProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.sql.Driver\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.time.zone.ZoneRulesProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.util.spi.ResourceBundleControlProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.eclipse.jetty.http.HttpFieldPreEncoder\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.eclipse.jetty.websocket.core.Extension\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.slf4j.spi.SLF4JServiceProvider\\E"
+  }, {
+    "pattern":"\\Qclasses.list\\E"
+  }, {
+    "pattern":"\\Qlog4j.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j.xml\\E"
+  }, {
+    "pattern":"\\Qorg/eclipse/jetty/http/encoding.properties\\E"
+  }, {
+    "pattern":"\\Qorg/eclipse/jetty/http/mime.properties\\E"
+  }, {
+    "pattern":"\\Qorg/eclipse/jetty/version/build.properties\\E"
+  }, {
+    "pattern":"\\Qtinypinyin/cncity.txt\\E"
+  }, {
+    "pattern":"\\Qwin32-native/cudaAccelerator.dll\\E"
+  }, {
+    "pattern":"\\Qwin32-native/cudart64_110.dll\\E"
+  }, {
+    "pattern":"\\Qwin32-native/cudart64_12.dll\\E"
+  }, {
+    "pattern":"\\Qwin32-native/fileMonitor.dll\\E"
+  }, {
+    "pattern":"\\Qwin32-native/fileSearcherUSN.exe\\E"
+  }, {
+    "pattern":"\\Qwin32-native/getWindowsKnownFolder.dll\\E"
+  }, {
+    "pattern":"\\Qwin32-native/isLocalDisk.dll\\E"
+  }, {
+    "pattern":"\\Qwin32-native/openclAccelerator.dll\\E"
+  }, {
+    "pattern":"\\Qwin32-native/sqlite3.dll\\E"
+  }, {
+    "pattern":"\\Qwin32-native/sqliteJDBC.dll\\E"
+  }, {
+    "pattern":"\\Qwin32-native/windowCheck.dll\\E"
+  }]},
+  "bundles":[{
+    "name":"jakarta.servlet.LocalStrings",
+    "locales":[""]
+  }, {
+    "name":"jakarta.servlet.http.LocalStrings",
+    "locales":[""]
+  }]
+}

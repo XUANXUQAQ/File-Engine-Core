@@ -427,16 +427,13 @@ public class DatabaseService {
                 try (Statement stmt = SQLiteUtil.getStatement(info[0]);
                      ResultSet resultSet = stmt.executeQuery("SELECT PATH FROM " + info[1] + " " + "WHERE PRIORITY=" + info[2])) {
                     EventManagement eventManagement = EventManagement.getInstance();
-                    GPUAccelerator.INSTANCE.initCache(key, () -> {
-                        try {
-                            if (resultSet.next() && eventManagement.notMainExit()) {
-                                return resultSet.getString("PATH");
-                            }
-                        } catch (Exception e) {
-                            log.error("error: {}", e.getMessage(), e);
-                        }
-                        return null;
-                    });
+                    ArrayList<String> caches = new ArrayList<>();
+                    while (resultSet.next() && eventManagement.notMainExit()) {
+                        String path = resultSet.getString("PATH");
+                        caches.add(path);
+                    }
+                    String[] cachesArray = new String[caches.size()];
+                    GPUAccelerator.INSTANCE.initCache(key, caches.toArray(cachesArray));
                     if (isStopCreateCache.get()) {
                         break;
                     }
@@ -1238,7 +1235,7 @@ public class DatabaseService {
                 return getPriorityBySuffix("defaultPriority");
             }
         } else {
-            return result.getFirst().priority;
+            return result.get(0).priority;
         }
     }
 

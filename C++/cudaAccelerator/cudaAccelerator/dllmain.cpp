@@ -352,22 +352,17 @@ JNIEXPORT jboolean JNICALL Java_file_engine_dllInterface_gpu_CudaAccelerator_isC
 /*
  * Class:     file_engine_dllInterface_gpu_CudaAccelerator
  * Method:    initCache
- * Signature: (Ljava/lang/String;Ljava/util/function/Supplier;)V
+ * Signature: (Ljava/lang/String;[Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_file_engine_dllInterface_gpu_CudaAccelerator_initCache
-(JNIEnv* env, jobject, jstring key_jstring, jobject record_supplier)
+(JNIEnv* env, jobject, jstring key_jstring, jobjectArray records_obj)
 {
-    const jclass supplier_class = env->GetObjectClass(record_supplier);
-    const jmethodID get_function = env->GetMethodID(supplier_class, "get", "()Ljava/lang/Object;");
     std::vector<std::string> records_vec;
     size_t total_bytes = 0;
-    while (true)
+    const auto records_len = env->GetArrayLength(records_obj);
+    for (jsize i = 0; i < records_len; ++i)
     {
-        const jobject record_from_supplier = env->CallObjectMethod(record_supplier, get_function);
-        if (record_from_supplier == nullptr)
-        {
-            break;
-        }
+        const auto record_from_supplier = env->GetObjectArrayElement(records_obj, i);
         const auto jstring_val = reinterpret_cast<jstring>(record_from_supplier);
         const auto record = env->GetStringUTFChars(jstring_val, nullptr);
         if (const auto record_len = strlen(record); record_len < MAX_PATH_LENGTH)
@@ -381,7 +376,6 @@ JNIEXPORT void JNICALL Java_file_engine_dllInterface_gpu_CudaAccelerator_initCac
     const auto key = env->GetStringUTFChars(key_jstring, nullptr);
     create_and_insert_cache(records_vec, total_bytes, key);
     env->ReleaseStringUTFChars(key_jstring, key);
-    env->DeleteLocalRef(supplier_class);
 }
 
 /*
