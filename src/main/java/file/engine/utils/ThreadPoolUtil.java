@@ -10,7 +10,6 @@ public enum ThreadPoolUtil {
     INSTANCE;
     private static final int THREAD_POOL_AWAIT_TIMEOUT = 60;
     private final ExecutorService cachedThreadPool;
-    private final ExecutorService virtualThreadPool;
     private final AtomicBoolean isShutdown = new AtomicBoolean(false);
 
     ThreadPoolUtil() {
@@ -23,7 +22,6 @@ public enum ThreadPoolUtil {
                 Executors.defaultThreadFactory(),
                 new ThreadPoolExecutor.CallerRunsPolicy()
         );
-        virtualThreadPool = Executors.newVirtualThreadPerTaskExecutor();
     }
 
     public static ThreadPoolUtil getInstance() {
@@ -39,7 +37,7 @@ public enum ThreadPoolUtil {
     }
 
     private <T> Future<T> executeTaskVirtual(Callable<T> task) {
-        return virtualThreadPool.submit(task);
+        return cachedThreadPool.submit(task);
     }
 
     private void executeTaskPlatform(Runnable task) {
@@ -47,7 +45,7 @@ public enum ThreadPoolUtil {
     }
 
     private void executeTaskVirtual(Runnable task) {
-        virtualThreadPool.submit(task);
+        cachedThreadPool.submit(task);
     }
 
     /**
@@ -107,7 +105,6 @@ public enum ThreadPoolUtil {
     public void shutdown() {
         isShutdown.set(true);
         cachedThreadPool.shutdown();
-        virtualThreadPool.shutdown();
         printInfo((ThreadPoolExecutor) cachedThreadPool);
     }
 
