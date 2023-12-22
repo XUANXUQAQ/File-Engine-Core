@@ -366,6 +366,27 @@
       {
         "name": "isVirtual",
         "parameterTypes": []
+      },
+      {
+        "name": "ofVirtual",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Thread$Builder$OfVirtual",
+    "methods": [
+      {
+        "name": "name",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      },
+      {
+        "name": "unstarted",
+        "parameterTypes": [
+          "java.lang.Runnable"
+        ]
       }
     ]
   },
@@ -465,6 +486,12 @@
     "name": "java.util.concurrent.Executors",
     "methods": [
       {
+        "name": "newThreadPerTaskExecutor",
+        "parameterTypes": [
+          "java.util.concurrent.ThreadFactory"
+        ]
+      },
+      {
         "name": "newVirtualThreadPerTaskExecutor",
         "parameterTypes": []
       }
@@ -517,12 +544,19 @@
     ]
   },
   {
+    "name": "jdk.internal.misc.Unsafe"
+  },
+  {
     "name": "kotlin.SafePublicationLazyImpl",
     "fields": [
       {
         "name": "_value"
       }
     ]
+  },
+  {
+    "name": "org.apache.log4j.Appender",
+    "queryAllPublicMethods": true
   },
   {
     "name": "org.apache.log4j.AppenderSkeleton",
@@ -660,6 +694,10 @@
   },
   {
     "name": "org.apache.log4j.WriterAppenderCustomizer"
+  },
+  {
+    "name": "org.apache.log4j.spi.OptionHandler",
+    "queryAllPublicMethods": true
   },
   {
     "name": "org.eclipse.jetty.util.TypeUtil",
