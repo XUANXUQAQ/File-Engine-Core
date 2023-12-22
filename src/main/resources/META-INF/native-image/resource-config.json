@@ -5,17 +5,7 @@
   }, {
     "pattern":"\\QMETA-INF/maven/org.xerial/sqlite-jdbc/pom.properties\\E"
   }, {
-    "pattern":"\\QMETA-INF/services/io.javalin.rendering.JavalinRenderer$FileRendererLoader\\E"
-  }, {
-    "pattern":"\\QMETA-INF/services/java.lang.System$LoggerFinder\\E"
-  }, {
-    "pattern":"\\QMETA-INF/services/java.nio.channels.spi.SelectorProvider\\E"
-  }, {
     "pattern":"\\QMETA-INF/services/java.sql.Driver\\E"
-  }, {
-    "pattern":"\\QMETA-INF/services/java.time.zone.ZoneRulesProvider\\E"
-  }, {
-    "pattern":"\\QMETA-INF/services/java.util.spi.ResourceBundleControlProvider\\E"
   }, {
     "pattern":"\\QMETA-INF/services/org.eclipse.jetty.http.HttpFieldPreEncoder\\E"
   }, {
@@ -26,8 +16,6 @@
     "pattern":"\\Qclasses.list\\E"
   }, {
     "pattern":"\\Qlog4j.properties\\E"
-  }, {
-    "pattern":"\\Qlog4j.xml\\E"
   }, {
     "pattern":"\\Qorg/eclipse/jetty/http/encoding.properties\\E"
   }, {
