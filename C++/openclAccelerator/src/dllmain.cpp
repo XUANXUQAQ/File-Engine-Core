@@ -246,15 +246,7 @@ JNIEXPORT jobjectArray JNICALL Java_file_engine_dllInterface_gpu_OpenclAccelerat
     {
         auto&& collect_func = [&]
         {
-            JNIEnv* thread_env = nullptr;
-            JavaVMAttachArgs args{JNI_VERSION_10, nullptr, nullptr};
-            if (jvm->AttachCurrentThread(reinterpret_cast<void**>(&thread_env), &args) != JNI_OK)
-            {
-                fprintf(stderr, "get thread JNIEnv ptr failed");
-                return;
-            }
             collect_results(result_counter, ret_value, max_results, search_case_vec);
-            jvm->DetachCurrentThread();
         };
         collect_threads_vec.emplace_back(collect_func);
     }
