@@ -121,19 +121,23 @@ public class Core {
     }
 
     private static HashMap<String, Object> getSearchResults() {
-        LinkedHashSet<String> ret = new LinkedHashSet<>();
-        ret.addAll(currentSearchTask.getCacheAndPriorityResults());
-        ret.addAll(currentSearchTask.getTempResults());
         HashMap<String, Object> retWrapper = new HashMap<>();
-        retWrapper.put("uuid", currentSearchTask.getUuid().toString());
-        retWrapper.put("data", ret);
+        if (currentSearchTask != null) {
+            LinkedHashSet<String> ret = new LinkedHashSet<>();
+            ret.addAll(currentSearchTask.getCacheAndPriorityResults());
+            ret.addAll(currentSearchTask.getTempResults());
+            retWrapper.put("uuid", currentSearchTask.getUuid().toString());
+            retWrapper.put("data", ret);
+        }
         return retWrapper;
     }
 
     private static HashMap<String, Object> getSearchCacheResults() {
         HashMap<String, Object> ret = new HashMap<>();
-        ret.put("uuid", currentSearchTask.getUuid().toString());
-        ret.put("data", currentSearchTask.getCacheAndPriorityResults());
+        if (currentSearchTask != null) {
+            ret.put("uuid", currentSearchTask.getUuid().toString());
+            ret.put("data", currentSearchTask.getCacheAndPriorityResults());
+        }
         return ret;
     }
 
