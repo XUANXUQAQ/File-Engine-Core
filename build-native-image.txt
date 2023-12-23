@@ -1,0 +1,1 @@
+native-image --no-fallback -Dorg.sqlite.lib.exportPath=~/outDir -H:Path=~/outDir -jar File-Engine-Core.jar -H:+JNI
