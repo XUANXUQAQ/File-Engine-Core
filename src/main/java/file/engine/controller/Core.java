@@ -52,7 +52,8 @@ public class Core {
                 .post("/search", ctx -> {
                     final DatabaseService.SearchTask[] searchTask = new DatabaseService.SearchTask[1];
                     StartSearchEvent startSearchEvent = new StartSearchEvent(
-                            generateSearchKeywordsAndSearchCase(Objects.requireNonNull(ctx.queryParam("searchText")))
+                            generateSearchKeywordsAndSearchCase(Objects.requireNonNull(ctx.queryParam("searchText")),
+                                    Integer.parseInt(Objects.requireNonNull(ctx.queryParam("maxResultNum"))))
                     );
                     eventManager.putEvent(startSearchEvent);
                     eventManager.waitForEvent(startSearchEvent);
@@ -68,7 +69,8 @@ public class Core {
                 })
                 .post("/prepareSearch", ctx -> {
                     PrepareSearchEvent prepareSearchEvent = new PrepareSearchEvent(
-                            generateSearchKeywordsAndSearchCase(Objects.requireNonNull(ctx.queryParam("searchText")))
+                            generateSearchKeywordsAndSearchCase(Objects.requireNonNull(ctx.queryParam("searchText")),
+                                    Integer.parseInt(Objects.requireNonNull(ctx.queryParam("maxResultNum"))))
                     );
                     eventManager.putEvent(prepareSearchEvent);
                     eventManager.waitForEvent(prepareSearchEvent);
@@ -80,7 +82,8 @@ public class Core {
                 })
                 .post("/searchAsync", ctx -> {
                     StartSearchEvent startSearchEvent = new StartSearchEvent(
-                            generateSearchKeywordsAndSearchCase(Objects.requireNonNull(ctx.queryParam("searchText")))
+                            generateSearchKeywordsAndSearchCase(Objects.requireNonNull(ctx.queryParam("searchText")),
+                                    Integer.parseInt(Objects.requireNonNull(ctx.queryParam("maxResultNum"))))
                     );
                     eventManager.putEvent(startSearchEvent);
                     eventManager.waitForEvent(startSearchEvent);
@@ -144,7 +147,7 @@ public class Core {
     /**
      * 根据用户输入设置搜索关键字
      */
-    private static SearchInfoEntity generateSearchKeywordsAndSearchCase(String searchBarText) {
+    private static SearchInfoEntity generateSearchKeywordsAndSearchCase(String searchBarText, int maxResultNum) {
         String searchText;
         String[] searchCase;
         String[] keywords;
@@ -172,6 +175,6 @@ public class Core {
             searchCase = null;
             searchText = "";
         }
-        return new SearchInfoEntity(() -> searchText, () -> searchCase, () -> keywords);
+        return new SearchInfoEntity(() -> searchText, () -> searchCase, () -> keywords, maxResultNum);
     }
 }

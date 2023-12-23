@@ -78,7 +78,6 @@ public class DatabaseService {
     private static final int MAX_TEMP_QUERY_RESULT_CACHE = 1024;
     private static final int MAX_CACHED_RECORD_NUM = 10240 * 5;
     private static final int MAX_SQL_NUM = 5000;
-    private static final int MAX_RESULTS = 200;
 
     private static volatile DatabaseService INSTANCE = null;
 
@@ -1847,7 +1846,7 @@ public class DatabaseService {
         var searchInfo = prepareSearchKeywords(prepareSearchEvent.searchText, prepareSearchEvent.searchCase, prepareSearchEvent.keywords);
         var searchTask = prepareTasksMap.get(searchInfo);
         if (searchTask == null) {
-            searchTask = prepareSearch(searchInfo);
+            searchTask = prepareSearch(searchInfo, prepareSearchEvent.maxResultNum);
             prepareTasksMap.put(searchInfo, searchTask);
         } else {
             searchTask.updateTaskUsedTimeMills();
@@ -1881,7 +1880,7 @@ public class DatabaseService {
         var searchInfo = prepareSearchKeywords(startSearchEvent.searchText, startSearchEvent.searchCase, startSearchEvent.keywords);
         var searchTask = prepareTasksMap.get(searchInfo);
         if (searchTask == null) {
-            searchTask = prepareSearch(searchInfo);
+            searchTask = prepareSearch(searchInfo, startSearchEvent.maxResultNum);
             prepareTasksMap.put(searchInfo, searchTask);
         }
         if (!searchTask.searchDoneFlag) {
@@ -1895,9 +1894,9 @@ public class DatabaseService {
      *
      * @param searchInfo searchInfo
      */
-    private static SearchTask prepareSearch(SearchInfo searchInfo) {
+    private static SearchTask prepareSearch(SearchInfo searchInfo, Integer maxResultNum) {
         var databaseService = getInstance();
-        var searchTask = new SearchTask(searchInfo);
+        var searchTask = new SearchTask(searchInfo, maxResultNum);
 
         var threadPoolUtil = ThreadPoolUtil.getInstance();
         databaseService.searchCache(searchTask);
@@ -1948,7 +1947,7 @@ public class DatabaseService {
                         searchInfo.keywords,
                         searchInfo.keywordsLowerCase,
                         searchInfo.isKeywordPath,
-                        MAX_RESULTS,
+                        maxResultNum,
                         Math.max(2, AllConfigs.getInstance().getConfigEntity().getSearchThreadNumber() / 4));
                 if (matchedResults != null) {
                     for (String path : matchedResults) {
@@ -2357,6 +2356,7 @@ public class DatabaseService {
         private volatile boolean searchDoneFlag = false;
         private volatile long taskUsedTimeMills = System.currentTimeMillis();
         private volatile boolean shouldStopSearchFlag = false;
+        private final Integer maxResultNum;
 
 
         private static final AtomicBoolean isGpuThreadRunning = new AtomicBoolean();
@@ -2375,7 +2375,7 @@ public class DatabaseService {
         }
 
         private boolean shouldStopSearch() {
-            return resultCounter.get() > MAX_RESULTS || shouldStopSearchFlag;
+            return resultCounter.get() > maxResultNum || shouldStopSearchFlag;
         }
     }
 

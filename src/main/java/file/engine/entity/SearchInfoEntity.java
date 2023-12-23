@@ -14,4 +14,6 @@ public class SearchInfoEntity {
     private Supplier<String[]> searchCase;
 
     private Supplier<String[]> keywords;
+
+    private int maxResultNum;
 }
