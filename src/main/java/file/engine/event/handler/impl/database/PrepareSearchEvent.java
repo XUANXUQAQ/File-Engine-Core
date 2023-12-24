@@ -11,6 +11,6 @@ public class PrepareSearchEvent extends StartSearchEvent {
     }
 
     public PrepareSearchEvent(SearchInfoEntity searchInfoEntity) {
-        super(searchInfoEntity.getSearchText(), searchInfoEntity.getSearchCase(), searchInfoEntity.getKeywords());
+        super(searchInfoEntity);
     }
 }

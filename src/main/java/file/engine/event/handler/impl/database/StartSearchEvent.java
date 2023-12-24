@@ -11,16 +11,19 @@ public class StartSearchEvent extends Event {
     public final Supplier<String[]> searchCase;
     public final Supplier<String> searchText;
     public final Supplier<String[]> keywords;
+    public final int maxResultNum;
 
     public StartSearchEvent(@NonNull Supplier<String> searchText, @NonNull Supplier<String[]> searchCase, @NonNull Supplier<String[]> keywords) {
         this.searchCase = searchCase;
         this.searchText = searchText;
         this.keywords = keywords;
+        this.maxResultNum = 200;
     }
 
     public StartSearchEvent(SearchInfoEntity searchInfoEntity) {
         this.searchCase = searchInfoEntity.getSearchCase();
         this.searchText = searchInfoEntity.getSearchText();
         this.keywords = searchInfoEntity.getKeywords();
+        this.maxResultNum = searchInfoEntity.getMaxResultNum();
     }
 }
