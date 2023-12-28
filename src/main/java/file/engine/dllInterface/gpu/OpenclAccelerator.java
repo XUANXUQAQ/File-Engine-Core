@@ -9,7 +9,7 @@ enum OpenclAccelerator implements IGPUAccelerator {
 
     OpenclAccelerator() {
         try {
-            System.load(Path.of("user/openclAccelerator.dll").toAbsolutePath().toString());
+            System.load(Path.of("openclAccelerator.dll").toAbsolutePath().toString());
             isOpenclLoaded = true;
         } catch (UnsatisfiedLinkError | Exception e) {
             isOpenclLoaded = false;

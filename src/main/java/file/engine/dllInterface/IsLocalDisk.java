@@ -6,7 +6,7 @@ public enum IsLocalDisk {
     INSTANCE;
 
     static {
-        System.load(Path.of("user/isLocalDisk.dll").toAbsolutePath().toString());
+        System.load(Path.of("isLocalDisk.dll").toAbsolutePath().toString());
     }
 
     /**

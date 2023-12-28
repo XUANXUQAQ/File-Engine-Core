@@ -6,7 +6,7 @@ public enum GetWindowsKnownFolder {
     INSTANCE;
 
     static {
-        System.load(Path.of("user/getWindowsKnownFolder.dll").toAbsolutePath().toString());
+        System.load(Path.of("getWindowsKnownFolder.dll").toAbsolutePath().toString());
     }
 
     /**

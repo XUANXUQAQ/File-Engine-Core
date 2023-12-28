@@ -19,6 +19,8 @@ public class Constants {
 
     public static final String DATABASE_INTEGRITY_CHECK_FILE = "user/databaseIntegrityCheck.dat";
 
+    public static final String CONFIG_FILE = "user/settings.json";
+
     public static final int MAX_TASK_EXIST_TIME = 5 * 60 * 1000;
 
     private Constants() {

@@ -75,7 +75,6 @@ public class DatabaseService {
     // 对数据库cache表的缓存，保存常用的应用
     private final ConcurrentSkipListMap<String, Integer> databaseCacheMap = new ConcurrentSkipListMap<>();
     private final AtomicInteger searchThreadCount = new AtomicInteger(0);
-    private static final int MAX_TEMP_QUERY_RESULT_CACHE = 1024;
     private static final int MAX_CACHED_RECORD_NUM = 10240 * 5;
     private static final int MAX_SQL_NUM = 5000;
 
@@ -734,36 +733,15 @@ public class DatabaseService {
         EventManagement eventManagement = EventManagement.getInstance();
         boolean isGPUMatchDone = false;
         try (ResultSet resultSet = stmt.executeQuery(sql)) {
-            boolean noMoreRecords = false;
-            ConcurrentLinkedQueue<String> tmpQueryResultsCache = new ConcurrentLinkedQueue<>();
-            out:
-            while (!noMoreRecords && !searchTask.shouldStopSearch() && eventManagement.notMainExit()) {
+            while (resultSet.next() && !searchTask.shouldStopSearch() && eventManagement.notMainExit()) {
                 if (isEnableGPUAccelerate && GPUAccelerator.INSTANCE.isMatchDone(key)) {
                     isGPUMatchDone = true;
                     break;
                 }
-                tmpQueryResultsCache.clear();
-                // 查询数据库，分配String数组
-                int realResultCount = 0;
-                // 先将结果查询出来，再进行字符串匹配，提高吞吐量
-                while (realResultCount < MAX_TEMP_QUERY_RESULT_CACHE) {
-                    if (isEnableGPUAccelerate && GPUAccelerator.INSTANCE.isMatchDone(key)) {
-                        isGPUMatchDone = true;
-                        break out;
-                    }
-                    if (resultSet.next()) {
-                        tmpQueryResultsCache.add(resultSet.getString("PATH"));
-                        ++realResultCount;
-                    } else {
-                        noMoreRecords = true;
-                        break;
-                    }
+                String each = resultSet.getString("PATH");
+                if (checkIsMatchedAndAddToList(each, searchTask)) {
+                    matchedResultCount.getAndIncrement();
                 }
-                tmpQueryResultsCache.parallelStream().forEach(each -> {
-                    if (checkIsMatchedAndAddToList(each, searchTask)) {
-                        matchedResultCount.getAndIncrement();
-                    }
-                });
             }
         } catch (SQLException e) {
             log.error("error sql : " + sql);
@@ -1452,19 +1430,19 @@ public class DatabaseService {
      * @throws IOException exception
      */
     private Process searchByUSN(String paths, String ignorePath) throws IOException {
-        File usnSearcher = new File("user/fileSearcherUSN.exe");
+        File usnSearcher = new File("fileSearcherUSN.exe");
         String absPath = usnSearcher.getAbsolutePath();
         String start = absPath.substring(0, 2);
         String end = "\"" + absPath.substring(2) + "\"";
         File database = new File("data");
-        try (BufferedWriter buffW = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("user/MFTSearchInfo.dat"), StandardCharsets.UTF_8))) {
+        try (BufferedWriter buffW = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("MFTSearchInfo.dat"), StandardCharsets.UTF_8))) {
             buffW.write(paths);
             buffW.newLine();
             buffW.write(database.getAbsolutePath());
             buffW.newLine();
             buffW.write(ignorePath);
         }
-        return Runtime.getRuntime().exec(new String[]{"cmd.exe", "/c", start + end}, null, new File("user"));
+        return Runtime.getRuntime().exec(new String[]{"cmd.exe", "/c", start + end});
     }
 
     private void resetStartTimeCount() {
