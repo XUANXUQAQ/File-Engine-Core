@@ -20,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.Objects;
@@ -76,7 +75,7 @@ public class MainClass {
 
     private static void setSystemProperties() {
         System.setProperty("file.encoding", "UTF-8");
-        System.setProperty("org.sqlite.lib.path", Path.of("user/").toAbsolutePath().toString());
+        System.setProperty("org.sqlite.lib.path", new File("").getAbsolutePath());
         System.setProperty("org.sqlite.lib.name", "sqliteJDBC.dll");
     }
 
@@ -237,15 +236,15 @@ public class MainClass {
     }
 
     private static void releaseAllDependence() throws IOException {
-        checkMd5AndReplace("user/fileMonitor.dll", "/win32-native/fileMonitor.dll");
-        checkMd5AndReplace("user/isLocalDisk.dll", "/win32-native/isLocalDisk.dll");
-        checkMd5AndReplace("user/fileSearcherUSN.exe", "/win32-native/fileSearcherUSN.exe");
-        checkMd5AndReplace("user/sqlite3.dll", "/win32-native/sqlite3.dll");
-        checkMd5AndReplace("user/windowCheck.dll", "/win32-native/windowCheck.dll");
-        checkMd5AndReplace("user/getWindowsKnownFolder.dll", "/win32-native/getWindowsKnownFolder.dll");
-        checkMd5AndReplace("user/sqliteJDBC.dll", "/win32-native/sqliteJDBC.dll");
-        checkMd5AndReplace("user/cudaAccelerator.dll", "/win32-native/cudaAccelerator.dll");
-        checkMd5AndReplace("user/openclAccelerator.dll", "/win32-native/openclAccelerator.dll");
+        checkMd5AndReplace("fileMonitor.dll", "/win32-native/fileMonitor.dll");
+        checkMd5AndReplace("isLocalDisk.dll", "/win32-native/isLocalDisk.dll");
+        checkMd5AndReplace("fileSearcherUSN.exe", "/win32-native/fileSearcherUSN.exe");
+        checkMd5AndReplace("sqlite3.dll", "/win32-native/sqlite3.dll");
+        checkMd5AndReplace("windowCheck.dll", "/win32-native/windowCheck.dll");
+        checkMd5AndReplace("getWindowsKnownFolder.dll", "/win32-native/getWindowsKnownFolder.dll");
+        checkMd5AndReplace("sqliteJDBC.dll", "/win32-native/sqliteJDBC.dll");
+        checkMd5AndReplace("cudaAccelerator.dll", "/win32-native/cudaAccelerator.dll");
+        checkMd5AndReplace("openclAccelerator.dll", "/win32-native/openclAccelerator.dll");
         checkMd5AndReplace("cudart64_110.dll", "/win32-native/cudart64_110.dll");
         checkMd5AndReplace("cudart64_12.dll", "/win32-native/cudart64_12.dll");
     }

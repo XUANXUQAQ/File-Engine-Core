@@ -6,7 +6,7 @@ public enum FileMonitor {
     INSTANCE;
 
     static {
-        System.load(Path.of("user/fileMonitor.dll").toAbsolutePath().toString());
+        System.load(Path.of("fileMonitor.dll").toAbsolutePath().toString());
     }
 
     /**

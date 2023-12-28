@@ -12,6 +12,7 @@ import file.engine.event.handler.impl.configs.CheckConfigsEvent;
 import file.engine.event.handler.impl.configs.SetConfigsEvent;
 import file.engine.event.handler.impl.stop.CloseEvent;
 import file.engine.utils.RegexUtil;
+import file.engine.utils.file.FileUtil;
 import file.engine.utils.gson.GsonUtil;
 import file.engine.utils.system.properties.IsDebug;
 import lombok.Getter;
@@ -30,9 +31,9 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 保存软件运行时的所有配置信息
  */
+@Getter
 @Slf4j
 public class AllConfigs {
-    @Getter
     private volatile ConfigEntity configEntity;
     private static volatile AllConfigs instance = null;
 
@@ -91,7 +92,7 @@ public class AllConfigs {
      * @return true如果存在且是NTFS磁盘
      */
     private boolean isDiskAvailable(String root) {
-        return Files.exists(Path.of(root)) && IsLocalDisk.INSTANCE.isDiskNTFS(root);
+        return FileUtil.isFileExist(root) && IsLocalDisk.INSTANCE.isDiskNTFS(root);
     }
 
     /**
@@ -193,7 +194,7 @@ public class AllConfigs {
     }
 
     private String readConfigsJson0() {
-        File settings = new File("user/settings.json");
+        File settings = new File(Constants.CONFIG_FILE);
         if (settings.exists()) {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(settings), StandardCharsets.UTF_8))) {
                 String line;
@@ -283,7 +284,7 @@ public class AllConfigs {
      * 将配置保存到文件user/settings.json
      */
     private void saveAllSettings() {
-        try (BufferedWriter buffW = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("user/settings.json"), StandardCharsets.UTF_8))) {
+        try (BufferedWriter buffW = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(Constants.CONFIG_FILE), StandardCharsets.UTF_8))) {
             String format = GsonUtil.INSTANCE.getGson().toJson(configEntity);
             buffW.write(format);
         } catch (IOException e) {

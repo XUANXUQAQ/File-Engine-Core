@@ -6,7 +6,7 @@ public enum WindowCheck {
     INSTANCE;
 
     static {
-        System.load(Path.of("user/windowCheck.dll").toAbsolutePath().toString());
+        System.load(Path.of("windowCheck.dll").toAbsolutePath().toString());
     }
 
     /**
