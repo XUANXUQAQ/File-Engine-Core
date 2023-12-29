@@ -2352,10 +2352,6 @@ public class DatabaseService {
             shouldStopSearchFlag = true;
         }
 
-        public int getResultNum() {
-            return resultCounter.get();
-        }
-
         private boolean shouldStopSearch() {
             return resultCounter.get() > maxResultNum || shouldStopSearchFlag;
         }

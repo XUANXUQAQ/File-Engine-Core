@@ -20,9 +20,7 @@ import io.javalin.json.JavalinGson;
 import io.javalin.util.JavalinLogger;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -128,9 +126,15 @@ public class Core {
         HashMap<String, Object> retWrapper = new HashMap<>();
         if (currentSearchTask != null) {
             CopyOnWriteArrayList<String> tempResults = currentSearchTask.getTempResults();
+            int size = tempResults.size();
             retWrapper.put("uuid", currentSearchTask.getUuid().toString());
-            retWrapper.put("data", tempResults.subList(startIndex, currentSearchTask.getResultNum()));
-            retWrapper.put("lastIndex", currentSearchTask.getResultNum());
+            try {
+                retWrapper.put("data", tempResults.subList(startIndex, size));
+            } catch (IndexOutOfBoundsException e) {
+                retWrapper.put("data", Collections.emptyList());
+            }
+            retWrapper.put("nextIndex", size);
+            retWrapper.put("isDone", currentSearchTask.isSearchDone());
         }
         return retWrapper;
     }
@@ -139,9 +143,15 @@ public class Core {
         HashMap<String, Object> ret = new HashMap<>();
         if (currentSearchTask != null) {
             CopyOnWriteArrayList<String> cacheAndPriorityResults = currentSearchTask.getCacheAndPriorityResults();
+            int size = cacheAndPriorityResults.size();
             ret.put("uuid", currentSearchTask.getUuid().toString());
-            ret.put("data", cacheAndPriorityResults.subList(startIndex, currentSearchTask.getResultNum()));
-            ret.put("lastIndex", currentSearchTask.getResultNum());
+            try {
+                ret.put("data", cacheAndPriorityResults.subList(startIndex, size));
+            } catch (IndexOutOfBoundsException e) {
+                ret.put("data", Collections.emptyList());
+            }
+            ret.put("nextIndex", size);
+            ret.put("isDone", currentSearchTask.isSearchDone());
         }
         return ret;
     }
