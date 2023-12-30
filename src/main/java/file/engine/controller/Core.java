@@ -20,9 +20,8 @@ import io.javalin.json.JavalinGson;
 import io.javalin.util.JavalinLogger;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -94,8 +93,8 @@ public class Core {
                     });
                 })
                 .delete("/search", ctx -> eventManager.putEvent(new StopSearchEvent()))
-                .get("/cacheResult", ctx -> ctx.json(getSearchCacheResults()))
-                .get("/result", ctx -> ctx.json(getSearchResults()))
+                .get("/cacheResult", ctx -> ctx.json(getSearchCacheResults(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("startIndex"))))))
+                .get("/result", ctx -> ctx.json(getSearchResults(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("startIndex"))))))
                 // cache
                 .post("/cache", ctx -> eventManager.putEvent(new AddToCacheEvent(ctx.queryParam("path"))))
                 .get("/cache", ctx -> ctx.json(databaseService.getCache()))
@@ -123,23 +122,36 @@ public class Core {
         }
     }
 
-    private static HashMap<String, Object> getSearchResults() {
+    private static HashMap<String, Object> getSearchResults(int startIndex) {
         HashMap<String, Object> retWrapper = new HashMap<>();
         if (currentSearchTask != null) {
-            LinkedHashSet<String> ret = new LinkedHashSet<>();
-            ret.addAll(currentSearchTask.getCacheAndPriorityResults());
-            ret.addAll(currentSearchTask.getTempResults());
+            CopyOnWriteArrayList<String> tempResults = currentSearchTask.getTempResults();
+            int size = tempResults.size();
             retWrapper.put("uuid", currentSearchTask.getUuid().toString());
-            retWrapper.put("data", ret);
+            try {
+                retWrapper.put("data", tempResults.subList(startIndex, size));
+            } catch (IndexOutOfBoundsException e) {
+                retWrapper.put("data", Collections.emptyList());
+            }
+            retWrapper.put("nextIndex", size);
+            retWrapper.put("isDone", currentSearchTask.isSearchDone());
         }
         return retWrapper;
     }
 
-    private static HashMap<String, Object> getSearchCacheResults() {
+    private static HashMap<String, Object> getSearchCacheResults(int startIndex) {
         HashMap<String, Object> ret = new HashMap<>();
         if (currentSearchTask != null) {
+            CopyOnWriteArrayList<String> cacheAndPriorityResults = currentSearchTask.getCacheAndPriorityResults();
+            int size = cacheAndPriorityResults.size();
             ret.put("uuid", currentSearchTask.getUuid().toString());
-            ret.put("data", currentSearchTask.getCacheAndPriorityResults());
+            try {
+                ret.put("data", cacheAndPriorityResults.subList(startIndex, size));
+            } catch (IndexOutOfBoundsException e) {
+                ret.put("data", Collections.emptyList());
+            }
+            ret.put("nextIndex", size);
+            ret.put("isDone", currentSearchTask.isSearchDone());
         }
         return ret;
     }
