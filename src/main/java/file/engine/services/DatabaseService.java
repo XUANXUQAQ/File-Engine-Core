@@ -68,7 +68,7 @@ public class DatabaseService {
     private final Set<TableNameWeightInfo> tableSet = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean isDatabaseUpdated = new AtomicBoolean(false);
     private final AtomicBoolean isCheckUnavailableDiskThreadNotExist = new AtomicBoolean(false);
-    private final ConcurrentLinkedQueue<SuffixPriorityPair> priorityMap = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<SuffixPriorityPair> priorityMap = new ConcurrentLinkedQueue<>();
     //tableCache 数据表缓存，在初始化时将会放入所有的key和一个空的cache，后续需要缓存直接放入空的cache中，不再创建新的cache实例
     private final ConcurrentHashMap<String, Cache> tableCache = new ConcurrentHashMap<>();
     private final AtomicInteger tableCacheCount = new AtomicInteger();
@@ -1169,31 +1169,32 @@ public class DatabaseService {
 
     public HashMap<String, Integer> getPriorityMap() {
         HashMap<String, Integer> map = new HashMap<>();
-        priorityMap.forEach(p -> map.put(p.suffix, p.priority));
+        getPriority().forEach(p -> map.put(p.suffix, p.priority));
         return map;
     }
 
     /**
      * 初始化优先级表
      */
-    private void initPriority() {
-        priorityMap.clear();
+    private ConcurrentLinkedQueue<SuffixPriorityPair> getPriority() {
+        ConcurrentLinkedQueue<SuffixPriorityPair> priorityQueue = new ConcurrentLinkedQueue<>();
         try (Statement stmt = SQLiteUtil.getStatement("cache");
              ResultSet resultSet = stmt.executeQuery("SELECT * FROM priority order by PRIORITY desc;")) {
             while (resultSet.next()) {
                 String suffix = resultSet.getString("SUFFIX");
                 String priority = resultSet.getString("PRIORITY");
                 try {
-                    priorityMap.add(new SuffixPriorityPair(suffix, Integer.parseInt(priority)));
+                    priorityQueue.add(new SuffixPriorityPair(suffix, Integer.parseInt(priority)));
                 } catch (Exception e) {
                     log.error("error: {}", e.getMessage(), e);
-                    priorityMap.add(new SuffixPriorityPair(suffix, 0));
+                    priorityQueue.add(new SuffixPriorityPair(suffix, 0));
                 }
             }
-            priorityMap.add(new SuffixPriorityPair("dirPriority", -1));
+            priorityQueue.add(new SuffixPriorityPair("dirPriority", -1));
         } catch (SQLException e) {
             log.error("error: {}", e.getMessage(), e);
         }
+        return priorityQueue;
     }
 
     /**
@@ -1556,7 +1557,7 @@ public class DatabaseService {
         // 搜索完成，更新isDatabaseUpdated标志
         isDatabaseUpdated.set(true);
         //重新初始化priority
-        initPriority();
+        priorityMap = getPriority();
         casSetStatus(this.status.get(), Constants.Enums.DatabaseStatus.NORMAL);
         startMonitorDisks();
     }
@@ -1961,7 +1962,7 @@ public class DatabaseService {
     @EventListener(listenClass = BootSystemEvent.class)
     private static void databaseServiceInit(Event event) {
         DatabaseService databaseService = getInstance();
-        databaseService.initPriority();
+        databaseService.priorityMap = databaseService.getPriority();
         databaseService.initTableMap();
         databaseService.prepareDatabaseCache();
         var allConfigs = AllConfigs.getInstance();

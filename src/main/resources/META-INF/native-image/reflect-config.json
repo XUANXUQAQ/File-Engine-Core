@@ -1,5 +1,12 @@
 [
   {
+    "name": "file.engine.dllInterface.gpu.GPUAccelerator",
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
     "name": "[Lorg.eclipse.jetty.servlet.ServletMapping",
     "allDeclaredFields": true,
     "allPublicFields": true,
