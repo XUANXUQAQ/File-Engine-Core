@@ -4,6 +4,7 @@ import file.engine.annotation.EventListener;
 import file.engine.configs.AllConfigs;
 import file.engine.configs.ConfigEntity;
 import file.engine.configs.Constants;
+import file.engine.dllInterface.gpu.GPUAccelerator;
 import file.engine.entity.SearchInfoEntity;
 import file.engine.event.handler.Event;
 import file.engine.event.handler.EventManagement;
@@ -39,6 +40,8 @@ public class Core {
         var app = Javalin.create(config -> config.jsonMapper(new JavalinGson(GsonUtil.INSTANCE.getGson())))
                 .exception(Exception.class, (e, ctx) -> log.error("error {}, ", e.getMessage(), e))
                 .error(HttpStatus.NOT_FOUND, ctx -> ctx.json("not found"))
+                .get("/config", ctx -> ctx.json(AllConfigs.getInstance().getConfigEntity()))
+                .get("/gpu", ctx -> ctx.json(GPUAccelerator.INSTANCE.getDevices()))
                 .post("/config", ctx -> eventManager.putEvent(new SetConfigsEvent(ctx.bodyAsClass(ConfigEntity.class))))
                 .post("/close", ctx -> eventManager.putEvent(new CloseEvent()))
                 .get("/status", ctx -> ctx.result(databaseService.getStatus().toString()))
