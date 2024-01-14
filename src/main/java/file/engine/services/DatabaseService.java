@@ -1993,7 +1993,9 @@ public class DatabaseService {
         if (databaseService.status.get() == Constants.Enums.DatabaseStatus._TEMP) {
             return;
         }
-        databaseService.addFileToCache(path);
+        if (databaseService.databaseCacheMap.size() < AllConfigs.getInstance().getConfigEntity().getCacheNumLimit()) {
+            databaseService.addFileToCache(path);
+        }
     }
 
     @EventRegister(registerClass = DeleteFromCacheEvent.class)

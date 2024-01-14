@@ -44,7 +44,6 @@ public class Core {
                 .get("/status", ctx -> ctx.result(databaseService.getStatus().toString()))
                 // db control
                 .post("/flushFileChanges", ctx -> eventManager.putEvent(new FlushFileChangesEvent()))
-                .post("/checkDbEmpty", ctx -> eventManager.putEvent(new CheckDatabaseEmptyEvent()))
                 .post("/optimize", ctx -> eventManager.putEvent(new OptimizeDatabaseEvent()))
                 // search
                 .get("/frequentResult", ctx -> ctx.json(databaseService.getFrequentlyUsedCaches(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("num"))))))
