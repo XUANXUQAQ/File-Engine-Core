@@ -2326,9 +2326,9 @@ public class DatabaseService {
         private final Bit allTaskStatus = new Bit(new byte[]{0});
         private final SearchInfo searchInfo;
         @Getter
-        private final CopyOnWriteArrayList<String> tempResults = new CopyOnWriteArrayList<>();
+        private final ConcurrentLinkedQueue<String> tempResults = new ConcurrentLinkedQueue<>();
         @Getter
-        private final CopyOnWriteArrayList<String> cacheAndPriorityResults = new CopyOnWriteArrayList<>();
+        private final ConcurrentLinkedQueue<String> cacheAndPriorityResults = new ConcurrentLinkedQueue<>();
         private final Set<String> tempResultsSet = ConcurrentHashMap.newKeySet();
         private final AtomicInteger resultCounter = new AtomicInteger();
         @Getter

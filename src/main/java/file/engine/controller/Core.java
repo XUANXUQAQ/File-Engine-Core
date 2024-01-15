@@ -21,10 +21,8 @@ import io.javalin.json.JavalinGson;
 import io.javalin.util.JavalinLogger;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -129,19 +127,8 @@ public class Core {
     private static HashMap<String, Object> getSearchResults(int startIndex) {
         HashMap<String, Object> retWrapper = new HashMap<>();
         if (currentSearchTask != null) {
-            synchronized (Core.class) {
-                var tempResults = currentSearchTask.getTempResults();
-                int size = 0;
-                retWrapper.put("uuid", currentSearchTask.getUuid().toString());
-                try {
-                    size = tempResults.size();
-                    retWrapper.put("data", tempResults.subList(startIndex, size));
-                } catch (IndexOutOfBoundsException e) {
-                    retWrapper.put("data", Collections.emptyList());
-                }
-                retWrapper.put("nextIndex", size);
-                retWrapper.put("isDone", currentSearchTask.isSearchDone());
-            }
+            var tempResults = currentSearchTask.getTempResults();
+            genSearchResultMap(startIndex, retWrapper, tempResults);
         }
         return retWrapper;
     }
@@ -149,21 +136,30 @@ public class Core {
     private static HashMap<String, Object> getSearchCacheResults(int startIndex) {
         HashMap<String, Object> ret = new HashMap<>();
         if (currentSearchTask != null) {
-            synchronized (Core.class) {
-                var cacheAndPriorityResults = currentSearchTask.getCacheAndPriorityResults();
-                int size = 0;
-                ret.put("uuid", currentSearchTask.getUuid().toString());
-                try {
-                    size = cacheAndPriorityResults.size();
-                    ret.put("data", cacheAndPriorityResults.subList(startIndex, size));
-                } catch (IndexOutOfBoundsException e) {
-                    ret.put("data", Collections.emptyList());
-                }
-                ret.put("nextIndex", size);
-                ret.put("isDone", currentSearchTask.isSearchDone());
-            }
+            var cacheAndPriorityResults = currentSearchTask.getCacheAndPriorityResults();
+            genSearchResultMap(startIndex, ret, cacheAndPriorityResults);
         }
         return ret;
+    }
+
+    private static void genSearchResultMap(int startIndex, HashMap<String, Object> retWrapper, ConcurrentLinkedQueue<String> tempResults) {
+        retWrapper.put("uuid", currentSearchTask.getUuid().toString());
+        Iterator<String> iterator = tempResults.iterator();
+        for (int i = 0; i < startIndex; i++) {
+            if (iterator.hasNext()) {
+                iterator.next();
+            } else {
+                startIndex = i;
+                break;
+            }
+        }
+        ArrayList<String> list = new ArrayList<>();
+        while (iterator.hasNext()) {
+            list.add(iterator.next());
+        }
+        retWrapper.put("data", list);
+        retWrapper.put("nextIndex", list.size() + startIndex);
+        retWrapper.put("isDone", currentSearchTask.isSearchDone());
     }
 
     /**
