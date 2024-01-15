@@ -425,13 +425,14 @@ public class DatabaseService {
                 try (Statement stmt = SQLiteUtil.getStatement(info[0]);
                      ResultSet resultSet = stmt.executeQuery("SELECT PATH FROM " + info[1] + " " + "WHERE PRIORITY=" + info[2])) {
                     EventManagement eventManagement = EventManagement.getInstance();
-                    ArrayList<String> caches = new ArrayList<>();
+                    String[] caches = new String[databaseResultsCount.get(key).get()];
+                    int count = 0;
                     while (resultSet.next() && eventManagement.notMainExit()) {
                         String path = resultSet.getString("PATH");
-                        caches.add(path);
+                        caches[count] = path;
+                        ++count;
                     }
-                    String[] cachesArray = new String[caches.size()];
-                    GPUAccelerator.INSTANCE.initCache(key, caches.toArray(cachesArray));
+                    GPUAccelerator.INSTANCE.initCache(key, caches);
                     if (isStopCreateCache.get()) {
                         break;
                     }
