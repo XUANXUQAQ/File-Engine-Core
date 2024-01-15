@@ -824,7 +824,6 @@ public class DatabaseService {
 
     private void searchDone(SearchTask searchTask) {
         EventManagement eventManagement = EventManagement.getInstance();
-        eventManagement.putEvent(new SearchDoneEvent(new ConcurrentLinkedQueue<>(searchTask.tempResults)));
         if (isEnableGPUAccelerate && eventManagement.notMainExit()) {
             GPUAccelerator.INSTANCE.stopCollectResults();
         }
