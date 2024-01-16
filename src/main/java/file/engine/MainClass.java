@@ -247,6 +247,7 @@ public class MainClass {
         checkMd5AndReplace("openclAccelerator.dll", "/win32-native/openclAccelerator.dll");
         checkMd5AndReplace("cudart64_110.dll", "/win32-native/cudart64_110.dll");
         checkMd5AndReplace("cudart64_12.dll", "/win32-native/cudart64_12.dll");
+        checkMd5AndReplace("pathMatcher.dll", "/win32-native/pathMatcher.dll");
     }
 
     private static void checkMd5AndReplace(String path, String rootPath) throws IOException {

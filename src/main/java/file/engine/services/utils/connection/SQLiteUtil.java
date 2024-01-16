@@ -168,6 +168,10 @@ public class SQLiteUtil {
         return new StatementWrapper((SQLiteConnection) wrapper.connection, wrapper.connectionUsingCounter);
     }
 
+    public static String getDbAbsolutePath(String key) {
+        return new File(currentDatabaseDir, key + ".db").getAbsolutePath();
+    }
+
     private static boolean isConnectionNotInitialized(String key) {
         if (connectionPool.isEmpty()) {
             throw new RuntimeException("The connection must be initialized first, call initConnection(String url)");
