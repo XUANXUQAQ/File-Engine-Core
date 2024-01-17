@@ -21,6 +21,10 @@
   "methods":[{"name":"callback","parameterTypes":["int"] }]
 },
 {
+  "name":"file.engine.dllInterface.gpu.GPUAccelerator",
+  "methods":[{"name":"sendRestartOnError0","parameterTypes":[] }]
+},
+{
   "name":"org.sqlite.Collation",
   "methods":[{"name":"xCompare","parameterTypes":["java.lang.String","java.lang.String"] }]
 },
