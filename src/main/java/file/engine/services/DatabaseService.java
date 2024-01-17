@@ -5,10 +5,7 @@ import file.engine.annotation.EventListener;
 import file.engine.annotation.EventRegister;
 import file.engine.configs.AllConfigs;
 import file.engine.configs.Constants;
-import file.engine.dllInterface.FileMonitor;
-import file.engine.dllInterface.WindowCheck;
-import file.engine.dllInterface.GetWindowsKnownFolder;
-import file.engine.dllInterface.IsLocalDisk;
+import file.engine.dllInterface.*;
 import file.engine.dllInterface.gpu.GPUAccelerator;
 import file.engine.event.handler.Event;
 import file.engine.event.handler.EventManagement;
@@ -425,13 +422,14 @@ public class DatabaseService {
                 try (Statement stmt = SQLiteUtil.getStatement(info[0]);
                      ResultSet resultSet = stmt.executeQuery("SELECT PATH FROM " + info[1] + " " + "WHERE PRIORITY=" + info[2])) {
                     EventManagement eventManagement = EventManagement.getInstance();
-                    ArrayList<String> caches = new ArrayList<>();
+                    String[] caches = new String[databaseResultsCount.get(key).get()];
+                    int count = 0;
                     while (resultSet.next() && eventManagement.notMainExit()) {
                         String path = resultSet.getString("PATH");
-                        caches.add(path);
+                        caches[count] = path;
+                        ++count;
                     }
-                    String[] cachesArray = new String[caches.size()];
-                    GPUAccelerator.INSTANCE.initCache(key, caches.toArray(cachesArray));
+                    GPUAccelerator.INSTANCE.initCache(key, caches);
                     if (isStopCreateCache.get()) {
                         break;
                     }
@@ -717,44 +715,6 @@ public class DatabaseService {
     }
 
     /**
-     * 搜索数据库并加入到tempQueue中
-     *
-     * @param sql sql
-     */
-    private int searchAndAddToTempResults(String sql,
-                                          Statement stmt,
-                                          SearchTask searchTask,
-                                          String key) {
-        //结果太多则不再进行搜索
-        if (searchTask.shouldStopSearch()) {
-            return 0;
-        }
-        AtomicInteger matchedResultCount = new AtomicInteger();
-        EventManagement eventManagement = EventManagement.getInstance();
-        boolean isGPUMatchDone = false;
-        try (ResultSet resultSet = stmt.executeQuery(sql)) {
-            while (resultSet.next() && !searchTask.shouldStopSearch() && eventManagement.notMainExit()) {
-                if (isEnableGPUAccelerate && GPUAccelerator.INSTANCE.isMatchDone(key)) {
-                    isGPUMatchDone = true;
-                    break;
-                }
-                String each = resultSet.getString("PATH");
-                if (checkIsMatchedAndAddToList(each, searchTask)) {
-                    matchedResultCount.getAndIncrement();
-                }
-            }
-        } catch (SQLException e) {
-            log.error("error sql : " + sql);
-            log.error("error: {}", e.getMessage(), e);
-        }
-        if (isGPUMatchDone) {
-            return GPUAccelerator.INSTANCE.matchedNumber(key);
-        } else {
-            return matchedResultCount.get();
-        }
-    }
-
-    /**
      * 根据优先级将表排序放入tableQueue
      */
     private ConcurrentLinkedQueue<String> initTableQueueByPriority() {
@@ -828,6 +788,7 @@ public class DatabaseService {
             GPUAccelerator.INSTANCE.stopCollectResults();
         }
         searchTask.searchDoneFlag = true;
+        PathMatcher.INSTANCE.closeConnections();
     }
 
     /**
@@ -884,9 +845,9 @@ public class DatabaseService {
                                      Bit currentTaskNum,
                                      SearchTask searchTask) {
         tasks.add(() -> {
-            Statement[] stmt = new Statement[]{null};
+            String diskStr = String.valueOf(diskChar.charAt(0));
+            PathMatcher.INSTANCE.openConnection(SQLiteUtil.getDbAbsolutePath(diskStr));
             for (var sqlAndTableName : sqlToExecute.entrySet()) {
-                String diskStr = String.valueOf(diskChar.charAt(0));
                 String eachSql = sqlAndTableName.getKey();
                 String tableName = sqlAndTableName.getValue();
                 String priority = getPriorityFromSelectSql(eachSql);
@@ -906,7 +867,7 @@ public class DatabaseService {
                         recordsNum = databaseResultsCount.get(key).get();
                     }
                     if (recordsNum != 0) {
-                        matchedNum = fallbackToSearchDatabase(searchTask, stmt, diskStr, eachSql, key);
+                        matchedNum = fallbackToSearchDatabase(searchTask, diskStr, eachSql, key);
                     }
                 }
                 final long weight = Math.min(matchedNum, 5);
@@ -920,19 +881,15 @@ public class DatabaseService {
             do {
                 originalBytes = searchTask.taskStatus.getBytes();
             } while (!searchTask.taskStatus.compareAndSet(originalBytes, Bit.or(originalBytes, currentTaskNum.getBytes())));
-            if (stmt[0] != null) {
-                try {
-                    stmt[0].close();
-                } catch (SQLException e) {
-                    log.error("error: {}", e.getMessage(), e);
-                }
-            }
         });
     }
 
-    private long fallbackToSearchDatabase(SearchTask searchTask, Statement[] stmt, String diskStr, String eachSql, String key) {
+    private long fallbackToSearchDatabase(SearchTask searchTask, String diskStr, String eachSql, String key) {
         if (searchTask.shouldStopSearch()) {
             return 0;
+        }
+        if (isEnableGPUAccelerate && GPUAccelerator.INSTANCE.isMatchDone(key)) {
+            return GPUAccelerator.INSTANCE.matchedNumber(key);
         }
         long matchedNum;
         Cache cache = tableCache.get(key);
@@ -944,16 +901,25 @@ public class DatabaseService {
         } else {
             //格式化是为了以后的拓展性
             String formattedSql = String.format(eachSql, "PATH");
-            if (stmt[0] == null) {
-                try {
-                    stmt[0] = SQLiteUtil.getStatement(diskStr);
-                } catch (SQLException e) {
-                    log.error("error: {}", e.getMessage(), e);
-                    throw new RuntimeException(e);
+            // C++实现
+            var searchInfo = searchTask.searchInfo;
+            String[] match = PathMatcher.INSTANCE.match(formattedSql,
+                    SQLiteUtil.getDbAbsolutePath(diskStr),
+                    searchInfo.searchCase,
+                    searchInfo.isIgnoreCase,
+                    searchInfo.searchText,
+                    searchInfo.keywords,
+                    searchInfo.keywordsLowerCase,
+                    searchInfo.isKeywordPath,
+                    searchTask.maxResultNum
+            );
+            matchedNum = match.length;
+            for (String path : match) {
+                if (searchTask.tempResultsSet.add(path)) {
+                    searchTask.resultCounter.getAndIncrement();
+                    searchTask.tempResults.add(path);
                 }
             }
-            //当前数据库表中有多少个结果匹配成功
-            matchedNum = searchAndAddToTempResults(formattedSql, stmt[0], searchTask, key);
         }
         return matchedNum;
     }

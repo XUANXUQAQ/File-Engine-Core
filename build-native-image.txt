@@ -1,1 +1,1 @@
-native-image --no-fallback -Dorg.sqlite.lib.exportPath=./outDir -H:Path=./outDir -jar File-Engine-Core.jar -H:+JNI -R:MaxHeapSize=512M -R:MinHeapSize=32M
+native-image --no-fallback -Dorg.sqlite.lib.exportPath=./outDir -H:Path=./outDir -jar File-Engine-Core.jar -H:+JNI -R:MaxHeapSize=512M -R:MinHeapSize=32M -H:+UseCompressedReferences -R:MaxHeapFree=16777216
