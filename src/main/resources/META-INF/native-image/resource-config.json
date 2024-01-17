@@ -58,6 +58,8 @@
     "pattern":"\\Qwin32-native/sqliteJDBC.dll\\E"
   }, {
     "pattern":"\\Qwin32-native/windowCheck.dll\\E"
+  }, {
+    "pattern":"\\Qwin32-native/pathMatcher.dll\\E"
   }]},
   "bundles":[{
     "name":"jakarta.servlet.LocalStrings",
