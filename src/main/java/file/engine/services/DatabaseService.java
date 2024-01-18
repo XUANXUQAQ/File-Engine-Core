@@ -915,7 +915,10 @@ public class DatabaseService {
             );
             matchedNum = match.length;
             for (String path : match) {
-                if (searchTask.tempResultsSet.add(path)) {
+                //字符串匹配通过
+                if (FileUtil.isFileNotExist(path)) {
+                    removeFileFromDatabase(path);
+                } else if (searchTask.tempResultsSet.add(path)) {
                     searchTask.resultCounter.getAndIncrement();
                     searchTask.tempResults.add(path);
                 }
@@ -1897,9 +1900,7 @@ public class DatabaseService {
                     for (String path : matchedResults) {
                         if (FileUtil.isFileNotExist(path)) {
                             databaseService.removeFileFromDatabase(path);
-                            return;
-                        }
-                        if (searchTask.tempResultsSet.add(path)) {
+                        } else if (searchTask.tempResultsSet.add(path)) {
                             searchTask.resultCounter.getAndIncrement();
                             searchTask.tempResults.add(path);
                         }
