@@ -1900,9 +1900,7 @@ public class DatabaseService {
                     for (String path : matchedResults) {
                         if (FileUtil.isFileNotExist(path)) {
                             databaseService.removeFileFromDatabase(path);
-                            return;
-                        }
-                        if (searchTask.tempResultsSet.add(path)) {
+                        } else if (searchTask.tempResultsSet.add(path)) {
                             searchTask.resultCounter.getAndIncrement();
                             searchTask.tempResults.add(path);
                         }
