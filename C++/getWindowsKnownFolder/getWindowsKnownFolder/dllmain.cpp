@@ -24,8 +24,9 @@ JNIEXPORT jstring JNICALL Java_file_engine_dllInterface_GetWindowsKnownFolder_ge
 	{
 		return nullptr;
 	}
+	auto&& ret = wstring2jstring(env, path);
 	CoTaskMemFree(path);
-	return wstring2jstring(env, path);
+	return ret;
 }
 
 std::wstring jstring2wstring(JNIEnv* env, jstring string)
