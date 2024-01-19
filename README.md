@@ -31,4 +31,3 @@
 - [OpenCLWrapper](https://github.com/ProjectPhysX/OpenCL-Wrapper)
 - [oshi](https://github.com/oshi/oshi)
 - [jna](https://github.com/java-native-access/jna)
-- [Javalin](https://javalin.io/)

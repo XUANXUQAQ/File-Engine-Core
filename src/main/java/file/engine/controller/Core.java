@@ -4,6 +4,7 @@ import file.engine.annotation.EventListener;
 import file.engine.configs.AllConfigs;
 import file.engine.configs.ConfigEntity;
 import file.engine.configs.Constants;
+import file.engine.dllInterface.PathMatcher;
 import file.engine.dllInterface.gpu.GPUAccelerator;
 import file.engine.entity.SearchInfoEntity;
 import file.engine.event.handler.Event;
@@ -44,6 +45,7 @@ public class Core {
                 .get("/gpu", ctx -> ctx.json(GPUAccelerator.INSTANCE.getDevices()))
                 .post("/config", ctx -> eventManager.putEvent(new SetConfigsEvent(ctx.bodyAsClass(ConfigEntity.class))))
                 .post("/close", ctx -> eventManager.putEvent(new CloseEvent()))
+                .delete("/closeConnections", ctx -> PathMatcher.INSTANCE.closeConnections())
                 .get("/status", ctx -> ctx.result(databaseService.getStatus().toString()))
                 // db control
                 .post("/flushFileChanges", ctx -> eventManager.putEvent(new FlushFileChangesEvent()))
