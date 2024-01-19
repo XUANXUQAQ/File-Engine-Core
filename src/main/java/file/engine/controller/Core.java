@@ -51,11 +51,7 @@ public class Core {
                 try {
                     byte[] bytes = new byte[8192];
                     DatagramPacket receivePacket = new DatagramPacket(bytes, bytes.length);
-                    try {
-                        server.receive(receivePacket);
-                    } catch (IOException e) {
-                        log.error(e.getMessage(), e);
-                    }
+                    server.receive(receivePacket);
                     reqUrl = new String(receivePacket.getData(), receivePacket.getOffset(),
                             receivePacket.getLength(), StandardCharsets.UTF_8);
                     int blankPos = reqUrl.indexOf(' ');
