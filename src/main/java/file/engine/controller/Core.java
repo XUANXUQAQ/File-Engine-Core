@@ -78,13 +78,13 @@ public class Core {
                                 byte[] resultBytes = result.getBytes(StandardCharsets.UTF_8);
                                 sendResult(receivePacket, resultBytes);
                             } else {
-                                sendResult(receivePacket, new byte[0]);
+                                sendResult(receivePacket, "not found".getBytes(StandardCharsets.UTF_8));
                             }
                         } else {
-                            sendResult(receivePacket, new byte[0]);
+                            sendResult(receivePacket, "method not supported".getBytes(StandardCharsets.UTF_8));
                         }
                     } else {
-                        sendResult(receivePacket, new byte[0]);
+                        sendResult(receivePacket, "method not found".getBytes(StandardCharsets.UTF_8));
                     }
                 } catch (Exception e) {
                     log.error(e.getMessage(), e);
@@ -104,6 +104,9 @@ public class Core {
     private static void sendResult(DatagramPacket receivePacket, byte[] bytes) throws IOException {
         InetAddress address = receivePacket.getAddress();
         int port = receivePacket.getPort();
+        if (bytes.length == 0) {
+            bytes = "success".getBytes(StandardCharsets.UTF_8);
+        }
         byte[] lenBytes = int2byteArray(bytes.length);
         server.send(new DatagramPacket(lenBytes, lenBytes.length, address, port));
         server.send(new DatagramPacket(bytes, bytes.length, address, port));
