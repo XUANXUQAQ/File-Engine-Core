@@ -1,5 +1,6 @@
 package file.engine.controller;
 
+import com.google.gson.Gson;
 import file.engine.annotation.EventListener;
 import file.engine.configs.AllConfigs;
 import file.engine.configs.ConfigEntity;
@@ -14,114 +15,262 @@ import file.engine.event.handler.impl.database.*;
 import file.engine.event.handler.impl.stop.CloseEvent;
 import file.engine.services.DatabaseService;
 import file.engine.utils.RegexUtil;
+import file.engine.utils.ThreadPoolUtil;
 import file.engine.utils.gson.GsonUtil;
-import io.javalin.Javalin;
-import io.javalin.http.HttpStatus;
-import io.javalin.json.JavalinGson;
-import io.javalin.util.JavalinLogger;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 @Slf4j
 public class Core {
 
     private static volatile DatabaseService.SearchTask currentSearchTask;
-    private static Javalin server;
+    private static DatagramSocket server;
 
     @EventListener(listenClass = BootSystemEvent.class)
     private static void startServer(Event event) {
-        JavalinLogger.enabled = false;
-        var allConfigs = AllConfigs.getInstance();
-        var databaseService = DatabaseService.getInstance();
-        var eventManager = EventManagement.getInstance();
-        var app = Javalin.create(config -> config.jsonMapper(new JavalinGson(GsonUtil.INSTANCE.getGson())))
-                .exception(Exception.class, (e, ctx) -> log.error("error {}, ", e.getMessage(), e))
-                .error(HttpStatus.NOT_FOUND, ctx -> ctx.json("not found"))
-                .get("/config", ctx -> ctx.json(AllConfigs.getInstance().getConfigEntity()))
-                .get("/gpu", ctx -> ctx.json(GPUAccelerator.INSTANCE.getDevices()))
-                .post("/config", ctx -> eventManager.putEvent(new SetConfigsEvent(ctx.bodyAsClass(ConfigEntity.class))))
-                .post("/close", ctx -> eventManager.putEvent(new CloseEvent()))
-                .get("/status", ctx -> ctx.result(databaseService.getStatus().toString()))
-                // db control
-                .post("/flushFileChanges", ctx -> eventManager.putEvent(new FlushFileChangesEvent()))
-                .post("/optimize", ctx -> eventManager.putEvent(new OptimizeDatabaseEvent()))
-                // search
-                .get("/frequentResult", ctx -> ctx.json(databaseService.getFrequentlyUsedCaches(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("num"))))))
-                .post("/search", ctx -> {
-                    final DatabaseService.SearchTask[] searchTask = new DatabaseService.SearchTask[1];
-                    StartSearchEvent startSearchEvent = new StartSearchEvent(
-                            generateSearchKeywordsAndSearchCase(Objects.requireNonNull(ctx.queryParam("searchText")),
-                                    Integer.parseInt(Objects.requireNonNull(ctx.queryParam("maxResultNum"))))
-                    );
-                    eventManager.putEvent(startSearchEvent);
-                    eventManager.waitForEvent(startSearchEvent);
-                    startSearchEvent.getReturnValue().ifPresent(o -> searchTask[0] = (DatabaseService.SearchTask) o);
-                    final long startTime = System.currentTimeMillis();
-                    while (!searchTask[0].isSearchDone() && System.currentTimeMillis() - startTime < Constants.MAX_TASK_EXIST_TIME) {
-                        TimeUnit.MILLISECONDS.sleep(50);
+        ThreadPoolUtil.getInstance().executeTask(() -> {
+            var allConfigs = AllConfigs.getInstance();
+            var urlMap = getUrlMap();
+            try {
+                server = new DatagramSocket(allConfigs.getConfigEntity().getPort(), InetAddress.getLocalHost());
+            } catch (SocketException | UnknownHostException e) {
+                throw new RuntimeException(e);
+            }
+            String reqUrl;
+            while (!server.isClosed()) {
+                try {
+                    byte[] bytes = new byte[8192];
+                    DatagramPacket receivePacket = new DatagramPacket(bytes, bytes.length);
+                    try {
+                        server.receive(receivePacket);
+                    } catch (IOException e) {
+                        log.error(e.getMessage(), e);
                     }
-                    LinkedHashSet<String> ret = new LinkedHashSet<>();
-                    ret.addAll(searchTask[0].getCacheAndPriorityResults());
-                    ret.addAll(searchTask[0].getTempResults());
-                    ctx.json(ret);
-                })
-                .post("/prepareSearch", ctx -> {
-                    PrepareSearchEvent prepareSearchEvent = new PrepareSearchEvent(
-                            generateSearchKeywordsAndSearchCase(Objects.requireNonNull(ctx.queryParam("searchText")),
-                                    Integer.parseInt(Objects.requireNonNull(ctx.queryParam("maxResultNum"))))
-                    );
-                    eventManager.putEvent(prepareSearchEvent);
-                    eventManager.waitForEvent(prepareSearchEvent);
-                    prepareSearchEvent.getReturnValue().ifPresent(o -> {
-                        DatabaseService.SearchTask searchTask = (DatabaseService.SearchTask) o;
-                        currentSearchTask = searchTask;
-                        ctx.result(searchTask.getUuid().toString());
-                    });
-                })
-                .post("/searchAsync", ctx -> {
-                    StartSearchEvent startSearchEvent = new StartSearchEvent(
-                            generateSearchKeywordsAndSearchCase(Objects.requireNonNull(ctx.queryParam("searchText")),
-                                    Integer.parseInt(Objects.requireNonNull(ctx.queryParam("maxResultNum"))))
-                    );
-                    eventManager.putEvent(startSearchEvent);
-                    eventManager.waitForEvent(startSearchEvent);
-                    startSearchEvent.getReturnValue().ifPresent(o -> {
-                        DatabaseService.SearchTask searchTask = (DatabaseService.SearchTask) o;
-                        currentSearchTask = searchTask;
-                        ctx.result(searchTask.getUuid().toString());
-                    });
-                })
-                .delete("/search", ctx -> eventManager.putEvent(new StopSearchEvent()))
-                .get("/cacheResult", ctx -> ctx.json(getSearchCacheResults(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("startIndex"))))))
-                .get("/result", ctx -> ctx.json(getSearchResults(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("startIndex"))))))
-                // cache
-                .post("/cache", ctx -> eventManager.putEvent(new AddToCacheEvent(ctx.queryParam("path"))))
-                .get("/cache", ctx -> ctx.json(databaseService.getCache()))
-                .delete("/cache", ctx -> eventManager.putEvent(new DeleteFromCacheEvent(ctx.queryParam("path"))))
-                // index
-                .post("/update", ctx -> eventManager.putEvent(new UpdateDatabaseEvent(Boolean.parseBoolean(ctx.queryParam("isDropPrevious")))))
-                // suffix priority
-                .post("/suffixPriority", ctx -> eventManager.putEvent(new AddToSuffixPriorityMapEvent(
-                        ctx.queryParam("suffix"), Integer.parseInt(Objects.requireNonNull(ctx.queryParam("priority")))
-                )))
-                .delete("/suffixPriority", ctx -> eventManager.putEvent(new DeleteFromSuffixPriorityMapEvent(ctx.queryParam("suffix"))))
-                .get("/suffixPriority", ctx -> ctx.json(databaseService.getPriorityMap()))
-                .put("/suffixPriority", ctx -> eventManager.putEvent(new UpdateSuffixPriorityEvent(
-                        ctx.queryParam("oldSuffix"), ctx.queryParam("newSuffix"), Integer.parseInt(Objects.requireNonNull(ctx.queryParam("priority")))
-                )))
-                .delete("/clearSuffixPriority", ctx -> eventManager.putEvent(new ClearSuffixPriorityMapEvent()));
-        server = app;
-        app.start(allConfigs.getConfigEntity().getPort());
+                    reqUrl = new String(receivePacket.getData(), receivePacket.getOffset(),
+                            receivePacket.getLength(), StandardCharsets.UTF_8);
+                    int blankPos = reqUrl.indexOf(' ');
+                    int paramPos = reqUrl.indexOf('?');
+                    //无请求方式
+                    if (blankPos != -1) {
+                        String type = reqUrl.substring(0, blankPos);
+                        String url;
+                        Map<String, String> params;
+                        if (paramPos != -1) {
+                            url = reqUrl.substring(blankPos + 1, paramPos);
+                            params = getParameter(reqUrl.substring(paramPos + 1));
+                        } else {
+                            url = reqUrl.substring(blankPos + 1);
+                            params = Collections.emptyMap();
+                        }
+                        var map = urlMap.get(type);
+                        //不支持的请求
+                        if (map != null) {
+                            var function = map.get(url);
+                            //未找到对应路径
+                            if (function != null) {
+                                String result = function.apply(params);
+                                byte[] resultBytes = result.getBytes(StandardCharsets.UTF_8);
+                                sendResult(receivePacket, resultBytes);
+                            } else {
+                                sendResult(receivePacket, new byte[0]);
+                            }
+                        } else {
+                            sendResult(receivePacket, new byte[0]);
+                        }
+                    } else {
+                        sendResult(receivePacket, new byte[0]);
+                    }
+                } catch (Exception e) {
+                    log.error(e.getMessage(), e);
+                }
+            }
+        });
     }
 
+    @SneakyThrows
     @EventListener(listenClass = CloseEvent.class)
     private static void close(Event event) {
         if (server != null) {
             server.close();
         }
+    }
+
+    private static void sendResult(DatagramPacket receivePacket, byte[] bytes) throws IOException {
+        InetAddress address = receivePacket.getAddress();
+        int port = receivePacket.getPort();
+        byte[] lenBytes = int2byteArray(bytes.length);
+        server.send(new DatagramPacket(lenBytes, lenBytes.length, address, port));
+        server.send(new DatagramPacket(bytes, bytes.length, address, port));
+    }
+
+    private static byte[] int2byteArray(int val) {
+        byte[] lenBytes = new byte[4];
+        lenBytes[3] = (byte) (val & 0xFF);
+        lenBytes[2] = (byte) (val >> 8 & 0xFF);
+        lenBytes[1] = (byte) (val >> 16 & 0xFF);
+        lenBytes[0] = (byte) (val >> 24 & 0xFF);
+        return lenBytes;
+    }
+
+    private static ConcurrentHashMap<String, ConcurrentHashMap<String, Function<Map<String, String>, String>>> getUrlMap() {
+        var urlMap = new ConcurrentHashMap<String, ConcurrentHashMap<String, Function<Map<String, String>, String>>>();
+        var getMap = generateGetMap();
+        var postMap = generatePostMap();
+        var putMap = generatePutMap();
+        var deleteMap = generateDeleteMap();
+        urlMap.put("GET", getMap);
+        urlMap.put("POST", postMap);
+        urlMap.put("PUT", putMap);
+        urlMap.put("DELETE", deleteMap);
+        return urlMap;
+    }
+
+    private static ConcurrentHashMap<String, Function<Map<String, String>, String>> generateDeleteMap() {
+        EventManagement eventManager = EventManagement.getInstance();
+        var deleteMap = new ConcurrentHashMap<String, Function<Map<String, String>, String>>();
+        deleteMap.put("/search", param -> {
+            eventManager.putEvent(new StopSearchEvent());
+            return "";
+        });
+        deleteMap.put("/cache", param -> {
+            eventManager.putEvent(new DeleteFromCacheEvent(param.get("path")));
+            return "";
+        });
+        deleteMap.put("/suffixPriority", param -> {
+            eventManager.putEvent(new DeleteFromSuffixPriorityMapEvent(param.get("suffix")));
+            return "";
+        });
+        deleteMap.put("/clearSuffixPriority", param -> {
+            eventManager.putEvent(new ClearSuffixPriorityMapEvent());
+            return "";
+        });
+        return deleteMap;
+    }
+
+    private static ConcurrentHashMap<String, Function<Map<String, String>, String>> generatePutMap() {
+        EventManagement eventManager = EventManagement.getInstance();
+        var putMap = new ConcurrentHashMap<String, Function<Map<String, String>, String>>();
+        putMap.put("/suffixPriority", param -> {
+            eventManager.putEvent(new UpdateSuffixPriorityEvent(
+                    param.get("oldSuffix"), param.get("newSuffix"), Integer.parseInt(Objects.requireNonNull(param.get("priority")))
+            ));
+            return "";
+        });
+        return putMap;
+    }
+
+    private static ConcurrentHashMap<String, Function<Map<String, String>, String>> generatePostMap() {
+        Gson gson = GsonUtil.INSTANCE.getGson();
+        EventManagement eventManager = EventManagement.getInstance();
+        var postMap = new ConcurrentHashMap<String, Function<Map<String, String>, String>>();
+        postMap.put("/config", param -> {
+            eventManager.putEvent(new SetConfigsEvent(gson.fromJson(URLDecoder.decode(param.get("config"), StandardCharsets.UTF_8), ConfigEntity.class)));
+            return "";
+        });
+        postMap.put("/close", param -> {
+            eventManager.putEvent(new CloseEvent());
+            return "";
+        });
+        postMap.put("/flushFileChanges", param -> {
+            eventManager.putEvent(new FlushFileChangesEvent());
+            return "";
+        });
+        postMap.put("/optimize", param -> {
+            eventManager.putEvent(new OptimizeDatabaseEvent());
+            return "";
+        });
+        postMap.put("/search", param -> {
+            final DatabaseService.SearchTask[] searchTask = new DatabaseService.SearchTask[1];
+            StartSearchEvent startSearchEvent = new StartSearchEvent(
+                    generateSearchKeywordsAndSearchCase(Objects.requireNonNull(param.get("searchText")),
+                            Integer.parseInt(Objects.requireNonNull(param.get("maxResultNum"))))
+            );
+            eventManager.putEvent(startSearchEvent);
+            eventManager.waitForEvent(startSearchEvent);
+            startSearchEvent.getReturnValue().ifPresent(o -> searchTask[0] = (DatabaseService.SearchTask) o);
+            final long startTime = System.currentTimeMillis();
+            while (!searchTask[0].isSearchDone() && System.currentTimeMillis() - startTime < Constants.MAX_TASK_EXIST_TIME) {
+                try {
+                    TimeUnit.MILLISECONDS.sleep(50);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            LinkedHashSet<String> ret = new LinkedHashSet<>();
+            ret.addAll(searchTask[0].getCacheAndPriorityResults());
+            ret.addAll(searchTask[0].getTempResults());
+            return gson.toJson(ret);
+        });
+        postMap.put("/prepareSearch", param -> {
+            PrepareSearchEvent prepareSearchEvent = new PrepareSearchEvent(
+                    generateSearchKeywordsAndSearchCase(Objects.requireNonNull(param.get("searchText")),
+                            Integer.parseInt(Objects.requireNonNull(param.get("maxResultNum"))))
+            );
+            eventManager.putEvent(prepareSearchEvent);
+            eventManager.waitForEvent(prepareSearchEvent);
+            prepareSearchEvent.getReturnValue().ifPresent(o -> currentSearchTask = (DatabaseService.SearchTask) o);
+            return currentSearchTask.getUuid().toString();
+        });
+        postMap.put("/searchAsync", param -> {
+            StartSearchEvent startSearchEvent = new StartSearchEvent(
+                    generateSearchKeywordsAndSearchCase(Objects.requireNonNull(param.get("searchText")),
+                            Integer.parseInt(Objects.requireNonNull(param.get("maxResultNum"))))
+            );
+            eventManager.putEvent(startSearchEvent);
+            eventManager.waitForEvent(startSearchEvent);
+            startSearchEvent.getReturnValue().ifPresent(o -> currentSearchTask = (DatabaseService.SearchTask) o);
+            return currentSearchTask.getUuid().toString();
+        });
+        postMap.put("/cache", param -> {
+            eventManager.putEvent(new AddToCacheEvent(param.get("path")));
+            return "";
+        });
+        postMap.put("/update", param -> {
+            eventManager.putEvent(new UpdateDatabaseEvent(Boolean.parseBoolean(param.get("isDropPrevious"))));
+            return "";
+        });
+        postMap.put("/suffixPriority", param -> {
+            eventManager.putEvent(new AddToSuffixPriorityMapEvent(
+                    param.get("suffix"), Integer.parseInt(Objects.requireNonNull(param.get("priority")))
+            ));
+            return "";
+        });
+        return postMap;
+    }
+
+    private static ConcurrentHashMap<String, Function<Map<String, String>, String>> generateGetMap() {
+        Gson gson = GsonUtil.INSTANCE.getGson();
+        var getMap = new ConcurrentHashMap<String, Function<Map<String, String>, String>>();
+        getMap.put("/config", param -> gson.toJson(AllConfigs.getInstance().getConfigEntity()));
+        getMap.put("/gpu", param -> gson.toJson(GPUAccelerator.INSTANCE.getDevices()));
+        getMap.put("/status", param -> DatabaseService.getInstance().getStatus().toString());
+        getMap.put("/frequentResult", param -> gson.toJson(DatabaseService.getInstance().getFrequentlyUsedCaches(Integer.parseInt(Objects.requireNonNull(param.get("num"))))));
+        getMap.put("/cacheResult", param -> gson.toJson(getSearchCacheResults(Integer.parseInt(Objects.requireNonNull(param.get("startIndex"))))));
+        getMap.put("/result", param -> gson.toJson(getSearchResults(Integer.parseInt(Objects.requireNonNull(param.get("startIndex"))))));
+        getMap.put("/cache", param -> gson.toJson(DatabaseService.getInstance().getCache()));
+        getMap.put("/suffixPriority", param -> gson.toJson(DatabaseService.getInstance().getPriorityMap()));
+        return getMap;
+    }
+
+    private static HashMap<String, String> getParameter(String contents) {
+        HashMap<String, String> map = new HashMap<>();
+        String[] keyValues = contents.split("&");
+        for (String keyValue : keyValues) {
+            int i = keyValue.indexOf("=");
+            String key = keyValue.substring(0, i);
+            String value = keyValue.substring(i + 1);
+            map.put(key, value);
+        }
+        return map;
     }
 
     private static HashMap<String, Object> getSearchResults(int startIndex) {
