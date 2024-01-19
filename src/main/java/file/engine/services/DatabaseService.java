@@ -788,7 +788,6 @@ public class DatabaseService {
             GPUAccelerator.INSTANCE.stopCollectResults();
         }
         searchTask.searchDoneFlag = true;
-        PathMatcher.INSTANCE.closeConnections();
     }
 
     /**
@@ -913,15 +912,19 @@ public class DatabaseService {
                     searchInfo.isKeywordPath,
                     searchTask.maxResultNum
             );
-            matchedNum = match.length;
-            for (String path : match) {
-                //字符串匹配通过
-                if (FileUtil.isFileNotExist(path)) {
-                    removeFileFromDatabase(path);
-                } else if (searchTask.tempResultsSet.add(path)) {
-                    searchTask.resultCounter.getAndIncrement();
-                    searchTask.tempResults.add(path);
+            if (match != null) {
+                matchedNum = match.length;
+                for (String path : match) {
+                    //字符串匹配通过
+                    if (FileUtil.isFileNotExist(path)) {
+                        removeFileFromDatabase(path);
+                    } else if (searchTask.tempResultsSet.add(path)) {
+                        searchTask.resultCounter.getAndIncrement();
+                        searchTask.tempResults.add(path);
+                    }
                 }
+            } else {
+                matchedNum = 0;
             }
         }
         return matchedNum;

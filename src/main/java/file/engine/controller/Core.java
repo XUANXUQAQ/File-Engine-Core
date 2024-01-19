@@ -5,6 +5,7 @@ import file.engine.annotation.EventListener;
 import file.engine.configs.AllConfigs;
 import file.engine.configs.ConfigEntity;
 import file.engine.configs.Constants;
+import file.engine.dllInterface.PathMatcher;
 import file.engine.dllInterface.gpu.GPUAccelerator;
 import file.engine.entity.SearchInfoEntity;
 import file.engine.event.handler.Event;
@@ -151,6 +152,10 @@ public class Core {
         });
         deleteMap.put("/clearSuffixPriority", param -> {
             eventManager.putEvent(new ClearSuffixPriorityMapEvent());
+            return "";
+        });
+        deleteMap.put("/closeConnections", param -> {
+            PathMatcher.INSTANCE.closeConnections();
             return "";
         });
         return deleteMap;
