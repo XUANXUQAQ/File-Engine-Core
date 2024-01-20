@@ -20,7 +20,18 @@
 - JDK >= 21  (项目使用了jdk21虚拟线程)
 - Visual Studio 2022（C++ 生成工具 >= v143）
 - maven >= 3.6.1
-
+```bash
+mvn clean compile package
+```
+- 编译后在target目录下将会得到File-Engine-Core.jar   
+- 使用7zip（或其他压缩软件）打开File-Engine-Core.jar，将META-INF/versions/9/org/sqlite复制到根目录下的org/sqlite中，更新jar文件   
+- 打开visual studio目录下的x64 Native Tools Command Prompt for VS 2022   
+- 使用cd切换到target目录下
+- 运行一下native image编译命令，需要使用[GraalVM](https://www.graalvm.org/downloads/)
+```bash
+native-image --no-fallback -Dorg.sqlite.lib.exportPath=./outDir -H:Path=./outDir -jar File-Engine-Core.jar -H:+JNI -R:MaxHeapSize=512M -R:MinHeapSize=32M -H:+UseCompressedReferences -R:MaxHeapFree=16777216
+```
+最后再outDir下将会得到File-Engine-Core.exe，sqlitejdbc.dll可以删除。
 
 ## 💖感谢以下项目：
 
