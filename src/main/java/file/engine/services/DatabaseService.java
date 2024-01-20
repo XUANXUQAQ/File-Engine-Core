@@ -872,9 +872,7 @@ public class DatabaseService {
                 matchedNum = match.length;
                 for (String path : match) {
                     //字符串匹配通过
-                    if (FileUtil.isFileNotExist(path)) {
-                        removeFileFromDatabase(path);
-                    } else if (searchTask.tempResultsSet.add(path)) {
+                    if (searchTask.tempResultsSet.add(path)) {
                         searchTask.resultCounter.getAndIncrement();
                         searchTask.tempResults.add(path);
                     }

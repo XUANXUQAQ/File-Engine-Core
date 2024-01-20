@@ -62,6 +62,7 @@ int callback(void* data, int col_count, char** res_value, char** res_col_name)
                 ++task->counter;
                 task->result_vec.emplace_back(res);
             }
+            break;
         }
     }
     return 0;
@@ -189,6 +190,11 @@ JNIEXPORT void JNICALL Java_file_engine_dllInterface_PathMatcher_openConnection
     }
     sqlite3* db = nullptr;
     sqlite3_open(db_path_str, &db);
+    sqlite3_exec(db, "PRAGMA TEMP_STORE=MEMORY;", nullptr, nullptr, nullptr);
+    sqlite3_exec(db, "PRAGMA cache_size=262144;", nullptr, nullptr, nullptr);
+    sqlite3_exec(db, "PRAGMA page_size=65535;", nullptr, nullptr, nullptr);
+    sqlite3_exec(db, "PRAGMA auto_vacuum=0;", nullptr, nullptr, nullptr);
+    sqlite3_exec(db, "PRAGMA mmap_size=4096;", nullptr, nullptr, nullptr);
     connection_map.insert(std::make_pair(db_path_str, db));
     env->ReleaseStringUTFChars(db_path, db_path_str);
     lock.unlock();

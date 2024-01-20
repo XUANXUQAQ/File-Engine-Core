@@ -464,6 +464,7 @@ public class SQLiteUtil {
         map.put("7z", count--);
         map.put("html", count);
         map.put("defaultPriority", 0);
+        map.put("dirPriority", -1);
         return map;
     }
 
