@@ -19,6 +19,7 @@ import file.engine.utils.gson.GsonUtil;
 import io.javalin.Javalin;
 import io.javalin.http.HttpStatus;
 import io.javalin.json.JavalinGson;
+import io.javalin.util.ConcurrencyUtil;
 import io.javalin.util.JavalinLogger;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,6 +36,7 @@ public class Core {
     @EventListener(listenClass = BootSystemEvent.class)
     private static void startServer(Event event) {
         JavalinLogger.enabled = false;
+        ConcurrencyUtil.INSTANCE.setUseLoom(false);
         var allConfigs = AllConfigs.getInstance();
         var databaseService = DatabaseService.getInstance();
         var eventManager = EventManagement.getInstance();
