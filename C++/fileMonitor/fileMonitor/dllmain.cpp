@@ -3,7 +3,6 @@
 #include <string>
 #include <concurrent_queue.h>
 #include <shared_mutex>
-#include "string_wstring_converter.h"
 #include "file_engine_dllInterface_FileMonitor.h"
 #include "NTFSChangesWatcher.h"
 
@@ -15,13 +14,13 @@
 
 using namespace concurrency;
 
-using file_record_queue = concurrent_queue<std::string>;
+using file_record_queue = concurrent_queue<std::wstring>;
 
 void monitor(const char* path);
 void stop_monitor(const std::string& path);
 void monitor_path(const std::string& path);
-bool pop_del_file(std::string& record);
-bool pop_add_file(std::string& record);
+bool pop_del_file(std::wstring& record);
+bool pop_add_file(std::wstring& record);
 void push_add_file(const std::u16string& record);
 void push_del_file(const std::u16string& record);
 
@@ -49,9 +48,10 @@ JNIEXPORT void JNICALL Java_file_engine_dllInterface_FileMonitor_stop_1monitor
 JNIEXPORT jstring JNICALL Java_file_engine_dllInterface_FileMonitor_pop_1add_1file
 (JNIEnv* env, jobject)
 {
-    if (std::string record; pop_add_file(record))
+    if (std::wstring record; pop_add_file(record))
     {
-        return env->NewStringUTF(record.c_str());
+        auto&& record_str = record.c_str();
+        return env->NewString(reinterpret_cast<const jchar*>(record_str), static_cast<jsize>(wcslen(record_str)));
     }
     return nullptr;
 }
@@ -68,9 +68,10 @@ JNIEXPORT jboolean JNICALL Java_file_engine_dllInterface_FileMonitor_is_1monitor
 JNIEXPORT jstring JNICALL Java_file_engine_dllInterface_FileMonitor_pop_1del_1file
 (JNIEnv* env, jobject)
 {
-    if (std::string record; pop_del_file(record))
+    if (std::wstring record; pop_del_file(record))
     {
-        return env->NewStringUTF(record.c_str());
+        auto&& record_str = record.c_str();
+        return env->NewString(reinterpret_cast<const jchar*>(record_str), static_cast<jsize>(wcslen(record_str)));
     }
     return nullptr;
 }
@@ -90,7 +91,7 @@ JNIEXPORT void JNICALL Java_file_engine_dllInterface_FileMonitor_delete_1usn_1on
 /**
  * 从file_del_queue中取出一个结果
  */
-bool pop_del_file(std::string& record)
+bool pop_del_file(std::wstring& record)
 {
     return file_del_queue.try_pop(record);
 }
@@ -98,7 +99,7 @@ bool pop_del_file(std::string& record)
 /**
  * 从file_add_queue中取出一个结果
  */
-bool pop_add_file(std::string& record)
+bool pop_add_file(std::wstring& record)
 {
     return file_added_queue.try_pop(record);
 }
@@ -106,22 +107,14 @@ bool pop_add_file(std::string& record)
 void push_add_file(const std::u16string& record)
 {
     const std::wstring wstr(reinterpret_cast<LPCWSTR>(record.c_str()));
-    auto&& str = wstring2string(wstr);
-#ifdef TEST
-	std::cout << "file added: " << str << std::endl;
-#endif
-    file_added_queue.push(str);
+    file_added_queue.push(wstr);
 }
 
 
 void push_del_file(const std::u16string& record)
 {
     const std::wstring wstr(reinterpret_cast<LPCWSTR>(record.c_str()));
-    auto&& str = wstring2string(wstr);
-#ifdef TEST
-	std::cout << "file removed: " << str << std::endl;
-#endif
-    file_del_queue.push(str);
+    file_del_queue.push(wstr);
 }
 
 void monitor(const char* path)
