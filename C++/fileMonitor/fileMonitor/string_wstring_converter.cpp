@@ -20,26 +20,3 @@ std::wstring string2wstring(const std::string& str)
     std::wstring wstr(wsp.get());
     return wstr;
 }
-
-std::string wstring2string(const std::wstring& wstr)
-{
-    const int buf_size = WideCharToMultiByte(CP_UTF8,
-                                             0,
-                                             wstr.c_str(),
-                                             -1,
-                                             nullptr,
-                                             0,
-                                             nullptr,
-                                             nullptr);
-    const std::unique_ptr<char> sp(new char[buf_size]);
-    WideCharToMultiByte(CP_UTF8,
-                        0,
-                        wstr.c_str(),
-                        -1,
-                        sp.get(),
-                        buf_size,
-                        nullptr,
-                        nullptr);
-    std::string str(sp.get());
-    return str;
-}
