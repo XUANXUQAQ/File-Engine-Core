@@ -133,3 +133,5 @@ bool is_str_contains_chinese(const char* source);
 void convert_to_pinyin(const char* chinese_str, char* output_str, size_t output_size, char* pinyin_initials);
 
 int is_dir_or_file(const char* path);
+
+inline bool is_file_exist(const std::string& path);

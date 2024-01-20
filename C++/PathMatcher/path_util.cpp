@@ -150,6 +150,12 @@ std::wstring string2wstring(const std::string& str)
     return result;
 }
 
+inline bool is_file_exist(const std::string& path)
+{
+    struct _stat64i32 buffer;
+    return _wstat(string2wstring(path).c_str(), &buffer) == 0;
+}
+
 int is_dir_or_file(const char* path)
 {
     const auto w_path = string2wstring(path);
@@ -179,7 +185,7 @@ bool match_func(const char* path, const search_task* task)
     const auto search_case = task->search_case_num;
     if (search_case == 0)
     {
-        return true;
+        return is_file_exist(path);
     }
     if (search_case & 1)
     {
@@ -205,5 +211,5 @@ bool match_func(const char* path, const search_task* task)
             return false;
         }
     }
-    return true;
+    return is_file_exist(path);
 }
