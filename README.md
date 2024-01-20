@@ -17,7 +17,7 @@
 
 ---
 
-- JDK >= 21  (项目使用了jdk21虚拟线程)
+- JDK >= 17
 - Visual Studio 2022（C++ 生成工具 >= v143）
 - maven >= 3.6.1
 ```bash
