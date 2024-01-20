@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import file.engine.configs.AllConfigs;
 import file.engine.configs.Constants;
 import file.engine.dllInterface.IsLocalDisk;
+import file.engine.dllInterface.PathMatcher;
 import file.engine.event.handler.EventManagement;
 import file.engine.event.handler.impl.stop.CloseEvent;
 import file.engine.utils.RegexUtil;
@@ -221,6 +222,7 @@ public class SQLiteUtil {
             }
         }
         connectionPool.clear();
+        PathMatcher.INSTANCE.closeConnections();
     }
 
     /**
