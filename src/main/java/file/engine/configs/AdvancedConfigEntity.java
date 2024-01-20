@@ -7,8 +7,6 @@ import lombok.Data;
 @AllArgsConstructor
 public class AdvancedConfigEntity {
 
-    private long searchWarmupTimeoutInMills;
-
     private long waitForSearchTasksTimeoutInMills;
 
     private boolean isDeleteUsnOnExit;

@@ -523,50 +523,6 @@ public class DatabaseService {
         });
     }
 
-    @SuppressWarnings("SameParameterValue")
-    private static String getRandomString(int length) {
-        String str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        Random random = new Random();
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            int number = random.nextInt(str.length());
-            sb.append(str.charAt(number));
-        }
-        return sb.toString();
-    }
-
-    private void warmupSearchThread() {
-        ThreadPoolUtil.getInstance().executeTask(() -> {
-            EventManagement eventManagement = EventManagement.getInstance();
-            long startTime = System.currentTimeMillis();
-            String[] searchCaseTemp = {PathMatchUtil.SearchCase.D, PathMatchUtil.SearchCase.F, PathMatchUtil.SearchCase.FULL, PathMatchUtil.SearchCase.CASE};
-            Random random = new Random();
-            while (eventManagement.notMainExit()) {
-                if (System.currentTimeMillis() - startTime > AllConfigs.getInstance()
-                        .getConfigEntity()
-                        .getAdvancedConfigEntity()
-                        .getSearchWarmupTimeoutInMills()) {
-                    if (!WindowCheck.INSTANCE.isForegroundFullscreen()) {
-                        String keywordsTemp = getRandomString(2) + ";" +
-                                getRandomString(2) + ";" +
-                                getRandomString(2);
-                        String[] warmupKeywords = RegexUtil.semicolon.split(keywordsTemp);
-                        startTime = System.currentTimeMillis();
-                        int randomSearchCase = random.nextInt(searchCaseTemp.length);
-                        eventManagement.putEvent(new StartSearchEvent(() -> warmupKeywords[0],
-                                () -> new String[]{searchCaseTemp[randomSearchCase]},
-                                () -> warmupKeywords));
-                    }
-                }
-                try {
-                    TimeUnit.MILLISECONDS.sleep(100);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
-    }
-
     private void addFileChangesRecords() {
         var eventManagement = EventManagement.getInstance();
         String tempPath = System.getProperty("java.io.tmpdir");
@@ -1946,7 +1902,6 @@ public class DatabaseService {
         databaseService.checkTimeAndSendExecuteSqlSignalThread();
         databaseService.executeAllCommands();
         databaseService.saveTableCacheThread();
-        databaseService.warmupSearchThread();
         databaseService.addRestartMonitorThread();
     }
 

@@ -174,14 +174,14 @@ public class AllConfigs {
     @SuppressWarnings("unchecked")
     private void readAdvancedConfigs(Map<String, Object> settingsInJson) {
         Map<String, Object> advancedConfigs = (Map<String, Object>) settingsInJson.getOrDefault("advancedConfigs", new HashMap<String, Object>());
-        long searchWarmupTimeoutInMills = Long.parseLong(getFromJson(advancedConfigs, "searchWarmupTimeoutInMills", (long) 10 * 60 * 1000).toString());
         long waitForSearchTasksTimeoutInMills = Long.parseLong(getFromJson(advancedConfigs, "waitForSearchTasksTimeoutInMills", (long) 5 * 60 * 1000).toString());
         boolean isDeleteUsnOnExit = Boolean.parseBoolean(getFromJson(advancedConfigs, "isDeleteUsnOnExit", false).toString());
         long restartMonitorDiskThreadTimeoutInMills = Long.parseLong(getFromJson(advancedConfigs, "restartMonitorDiskThreadTimeoutInMills", (long) 10 * 60 * 1000).toString());
-        configEntity.setAdvancedConfigEntity(new AdvancedConfigEntity(searchWarmupTimeoutInMills,
+        configEntity.setAdvancedConfigEntity(new AdvancedConfigEntity(
                 waitForSearchTasksTimeoutInMills,
                 isDeleteUsnOnExit,
-                restartMonitorDiskThreadTimeoutInMills));
+                restartMonitorDiskThreadTimeoutInMills)
+        );
     }
 
     private void readSearchThreadNumber(Map<String, Object> settingsInJson) {

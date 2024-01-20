@@ -53,21 +53,20 @@ public class Core {
                 // search
                 .get("/frequentResult", ctx -> ctx.json(databaseService.getFrequentlyUsedCaches(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("num"))))))
                 .post("/search", ctx -> {
-                    final DatabaseService.SearchTask[] searchTask = new DatabaseService.SearchTask[1];
                     StartSearchEvent startSearchEvent = new StartSearchEvent(
                             generateSearchKeywordsAndSearchCase(Objects.requireNonNull(ctx.queryParam("searchText")),
                                     Integer.parseInt(Objects.requireNonNull(ctx.queryParam("maxResultNum"))))
                     );
                     eventManager.putEvent(startSearchEvent);
                     eventManager.waitForEvent(startSearchEvent);
-                    startSearchEvent.getReturnValue().ifPresent(o -> searchTask[0] = (DatabaseService.SearchTask) o);
+                    startSearchEvent.getReturnValue().ifPresent(o -> currentSearchTask = (DatabaseService.SearchTask) o);
                     final long startTime = System.currentTimeMillis();
-                    while (!searchTask[0].isSearchDone() && System.currentTimeMillis() - startTime < Constants.MAX_TASK_EXIST_TIME) {
+                    while (!currentSearchTask.isSearchDone() && System.currentTimeMillis() - startTime < Constants.MAX_TASK_EXIST_TIME) {
                         TimeUnit.MILLISECONDS.sleep(50);
                     }
                     LinkedHashSet<String> ret = new LinkedHashSet<>();
-                    ret.addAll(searchTask[0].getCacheAndPriorityResults());
-                    ret.addAll(searchTask[0].getTempResults());
+                    ret.addAll(currentSearchTask.getCacheAndPriorityResults());
+                    ret.addAll(currentSearchTask.getTempResults());
                     ctx.json(ret);
                 })
                 .post("/prepareSearch", ctx -> {

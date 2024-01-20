@@ -19,6 +19,7 @@
     </repositories>
 
     <build>
+        <finalName>File-Engine-Core</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -47,7 +48,6 @@
                                     </mainClass>
                                 </manifest>
                             </archive>
-                            <finalName>File-Engine-Core</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
