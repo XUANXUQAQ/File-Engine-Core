@@ -4,15 +4,69 @@
 #define MAX_PATH_LENGTH 300
 #define MAX_KEYWORDS_NUMBER 150
 
-using search_task = struct tmp_search_task
+using search_info = class tmp_search_info
 {
-    std::vector<std::string> result_vec;
+public:
+    tmp_search_info(const int search_case_num, const bool is_ignore_case, const char* search_text,
+                    std::vector<std::string>* keywords, std::vector<std::string>* keywords_lower_case,
+                    bool* is_keyword_path)
+        : search_case_num(search_case_num),
+          is_ignore_case(is_ignore_case),
+          search_text(search_text),
+          keywords(keywords),
+          keywords_lower_case(keywords_lower_case),
+          is_keyword_path(is_keyword_path)
+    {
+    }
+
+    tmp_search_info(tmp_search_info&) = delete;
+    tmp_search_info() = delete;
+
+    ~tmp_search_info() = default;
+
+    [[nodiscard]] int get_search_case_num() const
+    {
+        return search_case_num;
+    }
+
+    [[nodiscard]] bool is_ignore_search_case() const
+    {
+        return is_ignore_case;
+    }
+
+    [[nodiscard]] std::string get_search_text() const
+    {
+        return search_text;
+    }
+
+    [[nodiscard]] const std::vector<std::string>* get_keywords() const
+    {
+        return keywords;
+    }
+
+    [[nodiscard]] const std::vector<std::string>* get_keywords_lower_case() const
+    {
+        return keywords_lower_case;
+    }
+
+    [[nodiscard]] const bool* is_keyword_path_value() const
+    {
+        return is_keyword_path;
+    }
+
+private:
     int search_case_num;
     bool is_ignore_case;
-    const char* search_text;
+    std::string search_text;
     std::vector<std::string>* keywords;
     std::vector<std::string>* keywords_lower_case;
     bool* is_keyword_path;
+};
+
+using search_task = struct tmp_search_task
+{
+    std::vector<std::string> result_vec;
+    search_info* search_info;
     long max_result;
     long counter = 0;
 };
@@ -124,7 +178,7 @@ bool not_matched(const char* path,
 
 void get_file_name(const char* path, char* output);
 
-bool match_func(const char* path, const search_task* task);
+bool match_func(const char* path, const search_info* info);
 
 void get_parent_path(const char* path, char* output);
 
