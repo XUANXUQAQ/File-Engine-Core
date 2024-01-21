@@ -57,7 +57,7 @@ int callback(void* data, int col_count, char** res_value, char** res_col_name)
     {
         if (strcmp(res_col_name[i], "PATH") == 0)
         {
-            if (const auto res = res_value[i]; match_func(res, task))
+            if (const auto res = res_value[i]; match_func(res, task->search_info))
             {
                 ++task->counter;
                 task->result_vec.emplace_back(res);
@@ -78,25 +78,27 @@ JNIEXPORT jobjectArray JNICALL Java_file_engine_dllInterface_PathMatcher_match
  jstring search_text, jobjectArray keywords, jobjectArray keywords_lower, jbooleanArray is_keyword_path,
  jint max_results)
 {
-    std::vector<std::string> search_case_vec;
-    if (search_case != nullptr)
-    {
-        generate_search_case(env, search_case_vec, search_case);
-    }
     int search_case_num = 0;
-    for (auto& each_case : search_case_vec)
     {
-        if (each_case == "f")
+        std::vector<std::string> search_case_vec;
+        if (search_case != nullptr)
         {
-            search_case_num |= 1;
+            generate_search_case(env, search_case_vec, search_case);
         }
-        if (each_case == "d")
+        for (auto& each_case : search_case_vec)
         {
-            search_case_num |= 2;
-        }
-        if (each_case == "full")
-        {
-            search_case_num |= 4;
+            if (each_case == "f")
+            {
+                search_case_num |= 1;
+            }
+            if (each_case == "d")
+            {
+                search_case_num |= 2;
+            }
+            if (each_case == "full")
+            {
+                search_case_num |= 4;
+            }
         }
     }
     std::vector<std::string> keywords_vec;
@@ -125,6 +127,14 @@ JNIEXPORT jobjectArray JNICALL Java_file_engine_dllInterface_PathMatcher_match
     }
     env->ReleaseBooleanArrayElements(is_keyword_path, is_keyword_path_ptr_bool_array, JNI_ABORT);
     const auto search_text_chars = env->GetStringUTFChars(search_text, nullptr);
+    search_info info_obj(search_case_num, is_ignore_case, search_text_chars, &keywords_vec, &keywords_lower_vec,
+                         is_keyword_path_ptr);
+    search_info* info = &info_obj;
+
+    search_task task;
+    task.search_info = info;
+    task.max_result = max_results;
+
     sqlite3* db = nullptr;
     try
     {
@@ -135,25 +145,19 @@ JNIEXPORT jobjectArray JNICALL Java_file_engine_dllInterface_PathMatcher_match
     catch (std::out_of_range& e)
     {
         fprintf(stderr, "Error: %s\n", e.what());
+        fflush(stderr);
     }
     if (db == nullptr)
     {
         return nullptr;
     }
     const auto sql_str = env->GetStringUTFChars(sql, nullptr);
-    search_task task;
-    task.search_case_num = search_case_num;
-    task.is_ignore_case = is_ignore_case;
-    task.search_text = search_text_chars;
-    task.keywords = &keywords_vec;
-    task.keywords_lower_case = &keywords_lower_vec;
-    task.is_keyword_path = is_keyword_path_ptr;
-    task.max_result = max_results;
     char* error_str;
     const auto rc = sqlite3_exec(db, sql_str, callback, &task, &error_str);
     if (rc != SQLITE_OK)
     {
         fprintf(stderr, "Query sql failed, sql: %s\n", sql_str);
+        fflush(stderr);
         sqlite3_free(error_str);
         return nullptr;
     }

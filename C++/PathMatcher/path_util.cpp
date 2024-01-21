@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "path_util.h"
 
+#include <algorithm>
+
 #include "str_convert.h"
 
 bool not_matched(const char* path,
@@ -171,45 +173,72 @@ int is_dir_or_file(const char* path)
     return -1;
 }
 
-bool match_func(const char* path, const search_task* task)
+bool match_func(const char* path, const search_info* info)
 {
     if (path == nullptr || !path[0])
     {
         return false;
     }
-    if (not_matched(path, task->is_ignore_case, task->keywords, task->keywords_lower_case, static_cast<int>(task->keywords->size()),
-                    task->is_keyword_path))
+    if (not_matched(path, info->is_ignore_search_case(), info->get_keywords(), info->get_keywords_lower_case(),
+                    static_cast<int>(info->get_keywords()->size()),
+                    info->is_keyword_path_value()))
     {
         return false;
     }
-    const auto search_case = task->search_case_num;
+    const auto search_case = info->get_search_case_num();
     if (search_case == 0)
     {
         return is_file_exist(path);
     }
+    short is_all_case_matched = 0;
     if (search_case & 1)
     {
         // file
-        return is_dir_or_file(path) == 1;
-
+        if (is_dir_or_file(path) == 1)
+        {
+            is_all_case_matched |= 1;
+        }
+    }
+    else
+    {
+        is_all_case_matched |= 1;
+    }
+    if (is_all_case_matched != 1)
+    {
+        return false;
     }
     if (search_case & 2)
     {
         // dir
-        return is_dir_or_file(path) == 0;
+        if (is_dir_or_file(path) == 0)
+        {
+            is_all_case_matched |= 2;
+        }
+    }
+    else
+    {
+        is_all_case_matched |= 2;
+    }
+    if (is_all_case_matched != 3)
+    {
+        return false;
     }
     if (search_case & 4)
     {
-        char search_text[MAX_PATH_LENGTH]{0};
-        strcpy_s(search_text, task->search_text);
-        _strlwr_s(search_text, strlen(search_text));
+        auto&& tmp_search_text = info->get_search_text();
         char file_name[MAX_PATH_LENGTH]{0};
         get_file_name(path, file_name);
-        _strlwr_s(file_name);
-        if (strcmp(search_text, file_name) != 0)
+        std::string tmp_file_name(file_name);
+        std::transform(tmp_search_text.begin(), tmp_search_text.end(), tmp_search_text.begin(), std::tolower);
+        std::transform(tmp_file_name.begin(), tmp_file_name.end(), tmp_file_name.begin(), std::tolower);
+        if (tmp_search_text == tmp_file_name)
         {
-            return false;
+            is_all_case_matched |= 4;
         }
     }
-    return is_file_exist(path);
+    else
+    {
+        is_all_case_matched |= 4;
+    }
+    return is_all_case_matched == 7 && is_file_exist(path);
 }
