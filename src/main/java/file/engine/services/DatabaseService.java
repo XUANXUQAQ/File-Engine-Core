@@ -876,6 +876,9 @@ public class DatabaseService {
                         searchTask.resultCounter.getAndIncrement();
                         searchTask.tempResults.add(path);
                     }
+                    if (searchTask.shouldStopSearch()) {
+                        break;
+                    }
                 }
             } else {
                 matchedNum = 0;
