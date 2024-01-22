@@ -460,7 +460,7 @@ public class DatabaseService {
                 final int vacancy = 1000;
                 //当前表可以被缓存
                 if (tableCacheCount.get() + tableNeedCache.get(key) < MAX_CACHED_RECORD_NUM - vacancy && !cache.isCacheValid()) {
-                    cache.data = new CopyOnWriteArrayList<>();
+                    cache.data = ConcurrentHashMap.newKeySet();
                     String[] info = RegexUtil.comma.split(key);
                     try (Statement stmt = SQLiteUtil.getStatement(info[0]);
                          ResultSet resultSet = stmt.executeQuery("SELECT PATH FROM " + info[1] + " " + "WHERE PRIORITY=" + info[2])) {
@@ -2217,7 +2217,7 @@ public class DatabaseService {
     private static class Cache {
         private final AtomicBoolean isCached = new AtomicBoolean(false);
         private final AtomicBoolean isFileLost = new AtomicBoolean(false);
-        private CopyOnWriteArrayList<String> data = null;
+        private Set<String> data = null;
 
         private boolean isCacheValid() {
             return isCached.get() && !isFileLost.get();
