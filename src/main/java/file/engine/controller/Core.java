@@ -23,6 +23,9 @@ import io.javalin.util.ConcurrencyUtil;
 import io.javalin.util.JavalinLogger;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
@@ -118,6 +121,12 @@ public class Core {
                 .delete("/clearSuffixPriority", ctx -> eventManager.putEvent(new ClearSuffixPriorityMapEvent()));
         server = app;
         app.start(allConfigs.getConfigEntity().getPort());
+        final int port = app.port();
+        try {
+            Files.writeString(Path.of("tmp/$$port"), String.valueOf(port));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @EventListener(listenClass = CloseEvent.class)

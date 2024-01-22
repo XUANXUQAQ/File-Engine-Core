@@ -1396,15 +1396,18 @@ public class DatabaseService {
         }
         //从文件中读取每个数据库的创建时间
         Gson gson = GsonUtil.INSTANCE.getGson();
-        try (var reader = new BufferedReader(new InputStreamReader(new FileInputStream(Constants.DATABASE_CREATE_TIME_FILE), StandardCharsets.UTF_8))) {
-            Map map = gson.fromJson(reader, Map.class);
-            if (map != null) {
-                //从文件中读取每个数据库的创建时间
-                map.forEach((disk, createTime) -> databaseCreateTimeMap.put((String) disk, (String) createTime));
+        if (FileUtil.isFileExist(Constants.DATABASE_CREATE_TIME_FILE)) {
+            try (var reader = new BufferedReader(new InputStreamReader(new FileInputStream(Constants.DATABASE_CREATE_TIME_FILE), StandardCharsets.UTF_8))) {
+                Map map = gson.fromJson(reader, Map.class);
+                if (map != null) {
+                    //从文件中读取每个数据库的创建时间
+                    map.forEach((disk, createTime) -> databaseCreateTimeMap.put((String) disk, (String) createTime));
+                }
+            } catch (Exception e) {
+                log.error("error: {}", e.getMessage(), e);
             }
-        } catch (Exception e) {
-            log.error("error: {}", e.getMessage(), e);
         }
+
         final long maxDatabaseSize = 8L * 1024 * 1024 * 100;
         for (String eachDisk : disks) {
             String name = eachDisk.charAt(0) + ".db";
