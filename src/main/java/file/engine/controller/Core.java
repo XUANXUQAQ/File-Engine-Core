@@ -121,7 +121,7 @@ public class Core {
         app.start(allConfigs.getConfigEntity().getPort());
         final int port = app.port();
         try {
-            Files.writeString(Path.of("tmp/$$port"), String.valueOf(port));
+            Files.writeString(Path.of(Constants.PORT_FILE_NAME), String.valueOf(port));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
