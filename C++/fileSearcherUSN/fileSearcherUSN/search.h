@@ -36,7 +36,7 @@ public:
         return vol;
     }
 
-    void collect_result_to_result_map(int ascii, const std::string& full_path);
+    void collect_result_to_result_map(int ascii, const std::string& full_path) const;
 
     void init_volume();
 
@@ -92,7 +92,6 @@ private:
 
     std::vector<std::string>* ignore_path_vector_ = nullptr;
     PriorityMap* priority_map_ = nullptr;
-    CONCURRENT_MAP<std::string, CONCURRENT_MAP<int, CONCURRENT_SET<std::string>*>*> all_results_map;
 
     bool get_handle();
     bool create_usn() const;
@@ -109,7 +108,6 @@ private:
     int get_priority_by_path(const std::string& _path) const;
     void init_all_prepare_statement();
     void init_single_prepare_statement(sqlite3_stmt** statement, const char* init) const;
-    void save_all_results_to_db();
 };
 
 
