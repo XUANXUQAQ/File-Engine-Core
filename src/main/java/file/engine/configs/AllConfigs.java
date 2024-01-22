@@ -132,7 +132,7 @@ public class AllConfigs {
     }
 
     private void readIsEnableGpuAccelerate(Map<String, Object> settingsInJson) {
-        boolean isEnableGpuAccelerate = getFromJson(settingsInJson, "isEnableGpuAccelerate", true);
+        boolean isEnableGpuAccelerate = getFromJson(settingsInJson, "isEnableGpuAccelerate", false);
         if (isEnableGpuAccelerate) {
             configEntity.setEnableGpuAccelerate(GPUAccelerator.INSTANCE.isGPUAvailableOnSystem());
         } else {
