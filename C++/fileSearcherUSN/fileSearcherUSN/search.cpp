@@ -25,15 +25,6 @@ volume::volume(const char vol, sqlite3* database, std::vector<std::string>* igno
 
 volume::~volume()
 {
-    for (auto& [_, table_list_ptr] : this->all_results_map)
-    {
-        auto&& table_list = *table_list_ptr;
-        for (auto& [priority_num, priority_list_ptr] : table_list)
-        {
-            delete priority_list_ptr;
-        }
-        delete table_list_ptr;
-    }
     CloseHandle(hVol);
 }
 
@@ -44,6 +35,7 @@ void volume::init_volume()
         using namespace std;
         auto collect_internal = [this](const Frn_Pfrn_Name_Map::iterator& map_iterator)
         {
+            unsigned count = 0;
             const auto& name = map_iterator->second.filename;
             const int ascii = get_asc_ii_sum(to_utf8(wstring(name)));
             CString result_path = _T("\0");
@@ -52,39 +44,50 @@ void volume::init_volume()
             if (const auto full_path = to_utf8(wstring(record)); !is_ignore(full_path))
             {
                 collect_result_to_result_map(ascii, full_path);
-                string tmp_path(full_path);
-                size_t pos = tmp_path.find_last_of('\\');
-                while (pos != string::npos)
-                {
-                    auto&& parent_path = tmp_path.substr(0, pos);
-                    if (parent_path.length() > 2)
-                    {
-                        collect_result_to_result_map(get_asc_ii_sum(get_file_name(parent_path)), parent_path);
-                    }
-                    else
-                    {
-                        break;
-                    }
-                    tmp_path = parent_path;
-                    pos = tmp_path.find_last_of('\\');
-                }
+                ++count;
+                // string tmp_path(full_path);
+                // size_t pos = tmp_path.find_last_of('\\');
+                // while (pos != string::npos)
+                // {
+                //     auto&& parent_path = tmp_path.substr(0, pos);
+                //     if (parent_path.length() > 2)
+                //     {
+                //         collect_result_to_result_map(get_asc_ii_sum(get_file_name(parent_path)), parent_path);
+                //         ++count;
+                //     }
+                //     else
+                //     {
+                //         break;
+                //     }
+                //     tmp_path = parent_path;
+                //     pos = tmp_path.find_last_of('\\');
+                // }
             }
+            return count;
         };
         auto search_internal = [this, &collect_internal]
         {
             auto&& start_iter = frnPfrnNameMap.begin();
             auto&& end_iter = frnPfrnNameMap.end();
+            unsigned count = 0;
+            init_all_prepare_statement();
             while (start_iter != end_iter)
             {
-                collect_internal(start_iter);
+                count += collect_internal(start_iter);
                 ++start_iter;
+                if (count > SAVE_TO_DATABASE_RECORD_CHECKPOINT)
+                {
+                    count = 0;
+                    finalize_all_statement();
+                    init_all_prepare_statement();
+                }
             }
+            finalize_all_statement();
         };
         try
         {
             search_internal();
-            printf("collect complete.\n");
-            save_all_results_to_db();
+            printf("collect disk %c complete.\n", this->getDiskPath());
         }
         catch (exception& e)
         {
@@ -99,102 +102,16 @@ void volume::init_volume()
     printf("%s\n", info.c_str());
 }
 
-void volume::collect_result_to_result_map(const int ascii, const std::string& full_path)
+void volume::collect_result_to_result_map(const int ascii, const std::string& full_path) const
 {
-    static std::mutex add_priority_lock;
     int ascii_group = ascii / 100;
     if (ascii_group > 40)
     {
         ascii_group = 40;
     }
-    std::string list_name("list");
-    list_name += std::to_string(ascii_group);
-    CONCURRENT_MAP<int, CONCURRENT_SET<std::string>*>* tmp_results;
-    CONCURRENT_SET<std::string>* priority_str_list = nullptr;
     const int priority = get_priority_by_path(full_path);
-    try
-    {
-        tmp_results = all_results_map.at(list_name);
-        try
-        {
-            priority_str_list = tmp_results->at(priority);
-        }
-        catch (std::exception&)
-        {
-            std::lock_guard lock_guard(add_priority_lock);
-            auto&& iter = tmp_results->find(priority);
-            if (iter == tmp_results->end())
-            {
-                priority_str_list = new CONCURRENT_SET<std::string>();
-                tmp_results->insert(std::pair(priority, priority_str_list));
-            }
-            else
-            {
-                priority_str_list = iter->second;
-            }
-        }
-    }
-    catch (std::out_of_range&)
-    {
-        static std::mutex add_list_lock;
-        std::lock_guard lock_guard(add_list_lock);
-        auto&& iter = all_results_map.find(list_name);
-        if (iter == all_results_map.end())
-        {
-            priority_str_list = new CONCURRENT_SET<std::string>();
-            tmp_results = new CONCURRENT_MAP<int, CONCURRENT_SET<std::string>*>();
-            tmp_results->insert(std::pair(priority, priority_str_list));
-            all_results_map.insert(std::pair(list_name, tmp_results));
-        }
-        else
-        {
-            tmp_results = iter->second;
-            std::lock_guard lock_guard2(add_priority_lock);
-            auto&& iter2 = tmp_results->find(priority);
-            if (iter2 == tmp_results->end())
-            {
-                priority_str_list = new CONCURRENT_SET<std::string>();
-                tmp_results->insert(std::pair(priority, priority_str_list));
-            }
-            else
-            {
-                priority_str_list = iter2->second;
-            }
-        }
-    }
-    catch (std::exception& e)
-    {
-        fprintf(stderr, "fileSearcherUSN: %s\n", e.what());
-    }
-    if (priority_str_list != nullptr)
-    {
-        priority_str_list->insert(full_path);
-    }
-}
 
-void volume::save_all_results_to_db()
-{
-    init_all_prepare_statement();
-    unsigned count = 0;
-    for (auto& [record_list_name, record_list_container] : all_results_map)
-    {
-        const int ascii_group = stoi(record_list_name.substr(4));
-        for (auto& [priority, result_container] : *record_list_container)
-        {
-            for (auto&& iter = result_container->begin(); iter != result_container->end(); ++iter)
-            {
-                save_result(*iter, get_asc_ii_sum(get_file_name(*iter)), ascii_group, priority);
-                ++count;
-                if (count > SAVE_TO_DATABASE_RECORD_CHECKPOINT)
-                {
-                    count = 0;
-                    finalize_all_statement();
-                    init_all_prepare_statement();
-                }
-            }
-        }
-    }
-    finalize_all_statement();
+    save_result(full_path, ascii, ascii_group, priority);
 }
 
 int volume::get_priority_by_suffix(const std::string& suffix) const
