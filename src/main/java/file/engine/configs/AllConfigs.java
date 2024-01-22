@@ -151,7 +151,7 @@ public class AllConfigs {
     }
 
     private void readServerPort(Map<String, Object> settingsInJson) {
-        configEntity.setPort(getFromJson(settingsInJson, "port", 50721));
+        configEntity.setPort(getFromJson(settingsInJson, "port", 0));
     }
 
     private void readCacheNumLimit(Map<String, Object> settingsInJson) {
@@ -194,17 +194,11 @@ public class AllConfigs {
     }
 
     private String readConfigsJson0() {
-        File settings = new File(Constants.CONFIG_FILE);
-        if (settings.exists()) {
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(settings), StandardCharsets.UTF_8))) {
-                String line;
-                StringBuilder result = new StringBuilder();
-                while (null != (line = br.readLine())) {
-                    result.append(line);
-                }
-                return result.toString();
+        if (FileUtil.isFileExist(Constants.CONFIG_FILE)) {
+            try {
+                return Files.readString(Path.of(Constants.CONFIG_FILE), StandardCharsets.UTF_8);
             } catch (IOException e) {
-                log.error(e.getMessage());
+                log.error(e.getMessage(), e);
             }
         }
         return "";
@@ -284,11 +278,10 @@ public class AllConfigs {
      * 将配置保存到文件user/settings.json
      */
     private void saveAllSettings() {
-        try (BufferedWriter buffW = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(Constants.CONFIG_FILE), StandardCharsets.UTF_8))) {
-            String format = GsonUtil.INSTANCE.getGson().toJson(configEntity);
-            buffW.write(format);
+        try {
+            Files.writeString(Path.of(Constants.CONFIG_FILE), GsonUtil.INSTANCE.getGson().toJson(configEntity), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            log.error("error: {}", e.getMessage(), e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -358,7 +351,6 @@ public class AllConfigs {
         if (setConfigsEvent.getConfigs() == null) {
             // MainClass初始化
             allConfigs.readAllSettings();
-            setConfigsEvent.setConfigs(allConfigs.configEntity);
             allConfigs.saveAllSettings();
         } else {
             // 添加高级设置参数
