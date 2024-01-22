@@ -1963,6 +1963,7 @@ public class DatabaseService {
         for (String eachDisk : splitDisks) {
             try (Statement stmt = SQLiteUtil.getStatement(String.valueOf(eachDisk.charAt(0)))) {
                 stmt.execute("VACUUM;");
+                stmt.execute("PRAGMA optimize;");
             } catch (Exception ex) {
                 log.error("error: {}", ex.getMessage(), ex);
             } finally {
