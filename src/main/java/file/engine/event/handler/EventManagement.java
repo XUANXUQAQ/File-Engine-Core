@@ -59,7 +59,7 @@ public class EventManagement {
      */
     public boolean waitForEvent(Event event, int timeout) {
         long startTime = System.currentTimeMillis();
-        while (!event.allRetryFailed() && !event.isFinished()) {
+        while (!event.isFinished()) {
             if (System.currentTimeMillis() - startTime > timeout) {
                 log.error("等待" + event + "超时");
                 break;
@@ -88,7 +88,7 @@ public class EventManagement {
      *
      * @param event Restart
      */
-    private void handleRestart(CloseEvent event) {
+    private void handleClose(CloseEvent event) {
         exit = true;
         doAllMethod(CloseEvent.class.getName(), event);
         event.setFinishedAndExecCallback();
@@ -97,21 +97,24 @@ public class EventManagement {
 
     private boolean handleNormalEvent(Event event) {
         String eventClassName = event.getClass().getName();
-            Method eventHandler = EVENT_HANDLER_MAP.get(eventClassName);
-            if (eventHandler != null) {
-                try {
-                    eventHandler.invoke(null, event);
-                    doAllMethod(eventClassName, event);
-                    event.setFinishedAndExecCallback();
-                    return false;
-                } catch (Exception e) {
-                    log.error("error: {}", e.getMessage(), e);
-                    return true;
-                }
-            } else {
+        Method eventHandler = EVENT_HANDLER_MAP.get(eventClassName);
+        if (eventHandler != null) {
+            try {
+                eventHandler.invoke(null, event);
                 doAllMethod(eventClassName, event);
                 event.setFinishedAndExecCallback();
+                return false;
+            } catch (InvocationTargetException e) {
+                event.setException(e.getTargetException());
+                return true;
+            } catch (Exception e) {
+                log.error("error: {}", e.getMessage(), e);
+                return true;
             }
+        } else {
+            doAllMethod(eventClassName, event);
+            event.setFinishedAndExecCallback();
+        }
         return false;
     }
 
@@ -124,7 +127,7 @@ public class EventManagement {
     private boolean executeTaskFailed(Event event) {
         event.incrementExecuteTimes();
         if (event instanceof CloseEvent) {
-            handleRestart((CloseEvent) event);
+            handleClose((CloseEvent) event);
             System.exit(0);
         } else {
             return handleNormalEvent(event);
@@ -372,7 +375,6 @@ public class EventManagement {
      * @param eventQueue eventQueue
      */
     private void eventHandle(ConcurrentLinkedQueue<Event> eventQueue) {
-        final boolean isDebug = IsDebug.isDebug();
         while (isEventHandlerNotExit()) {
             //取出任务
             Event event = eventQueue.poll();
@@ -385,15 +387,13 @@ public class EventManagement {
                 continue;
             }
             //判断任务是否执行完成或者失败
-            if (event.isFinished() || event.allRetryFailed()) {
+            if (event.isFinished()) {
                 continue;
             }
             if (event.allRetryFailed()) {
                 //判断是否超过最大次数
                 event.execErrorHandler();
-                if (isDebug) {
-                    log.error("任务超时---" + event);
-                }
+                event.setFinished();
             } else {
                 if (executeTaskFailed(event)) {
                     log.error("任务执行失败---" + event);
@@ -404,18 +404,16 @@ public class EventManagement {
     }
 
     private void eventHandle(@NonNull Event event) {
-        final boolean isDebug = IsDebug.isDebug();
         while (true) {
             //判断任务是否执行完成或者失败
-            if (event.isFinished() || event.allRetryFailed()) {
+            if (event.isFinished()) {
                 return;
             }
             if (event.allRetryFailed()) {
                 //判断是否超过最大次数
                 event.execErrorHandler();
-                if (isDebug) {
-                    log.error("任务超时---" + event);
-                }
+                event.setFinished();
+                return;
             } else {
                 if (executeTaskFailed(event)) {
                     log.error("任务执行失败---" + event);

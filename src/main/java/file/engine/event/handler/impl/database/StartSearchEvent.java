@@ -13,6 +13,10 @@ public class StartSearchEvent extends Event {
     public final Supplier<String[]> keywords;
     public final int maxResultNum;
 
+    {
+        this.setMaxRetryTimes(1);
+    }
+
     public StartSearchEvent(@NonNull Supplier<String> searchText, @NonNull Supplier<String[]> searchCase, @NonNull Supplier<String[]> keywords) {
         this.searchCase = searchCase;
         this.searchText = searchText;

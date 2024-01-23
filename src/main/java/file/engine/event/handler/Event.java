@@ -1,5 +1,7 @@
 package file.engine.event.handler;
 
+import lombok.Setter;
+
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -9,10 +11,16 @@ public class Event {
     private final AtomicBoolean isFinished = new AtomicBoolean(false);
     private final AtomicInteger executeTimes = new AtomicInteger(0);
     private final AtomicBoolean isBlock = new AtomicBoolean(false);
+    @Setter
     private int maxRetryTimes = 5;
+    @Setter
     private volatile Object returnValue;
+    @Setter
     private Consumer<Event> callback;
+    @Setter
     private Consumer<Event> errorHandler;
+    @Setter
+    private volatile Throwable exception;
 
     protected void incrementExecuteTimes() {
         executeTimes.incrementAndGet();
@@ -47,8 +55,8 @@ public class Event {
         isFinished.set(true);
     }
 
-    public void setReturnValue(Object obj) {
-        this.returnValue = obj;
+    protected void setFinished() {
+        isFinished.set(true);
     }
 
     @SuppressWarnings("unchecked")
@@ -56,16 +64,8 @@ public class Event {
         return Optional.ofNullable((T) returnValue);
     }
 
-    public void setCallback(Consumer<Event> callback) {
-        this.callback = callback;
-    }
-
-    public void setErrorHandler(Consumer<Event> errorHandler) {
-        this.errorHandler = errorHandler;
-    }
-
-    public void setMaxRetryTimes(int maxRetryTimes) {
-        this.maxRetryTimes = maxRetryTimes;
+    public Optional<Throwable> getException() {
+        return Optional.ofNullable(exception);
     }
 
     @Override

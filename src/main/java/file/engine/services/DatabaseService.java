@@ -1738,9 +1738,19 @@ public class DatabaseService {
 
     @EventRegister(registerClass = PrepareSearchEvent.class)
     private static void prepareSearchEvent(Event event) {
-        if (((PrepareSearchEvent) event).searchText.get().length() > Constants.MAX_SEARCH_TEXT_LENGTH) {
+        var prepareSearchEvent = (PrepareSearchEvent) event;
+        if (prepareSearchEvent.searchText.get().length() > Constants.MAX_SEARCH_TEXT_LENGTH) {
             log.warn("关键字太长，取消搜索");
-            return;
+            throw new RuntimeException("关键字太长，取消搜索");
+        }
+        String[] searchCaseArray = prepareSearchEvent.searchCase.get();
+        if (searchCaseArray != null && List.of(searchCaseArray).contains(PathMatchUtil.SearchCase.P)) {
+            try {
+                RegexUtil.getPattern(prepareSearchEvent.searchText.get(), 0);
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+                throw new RuntimeException("正则表达式输入错误");
+            }
         }
         var startWaiting = System.currentTimeMillis();
         final long timeout = 3000;
@@ -1752,7 +1762,6 @@ public class DatabaseService {
             }
             Thread.onSpinWait();
         }
-        var prepareSearchEvent = (PrepareSearchEvent) event;
         var searchInfo = prepareSearchKeywords(prepareSearchEvent.searchText, prepareSearchEvent.searchCase, prepareSearchEvent.keywords);
         var searchTask = prepareTasksMap.get(searchInfo);
         if (searchTask == null) {
@@ -1766,9 +1775,19 @@ public class DatabaseService {
 
     @EventRegister(registerClass = StartSearchEvent.class)
     private static void startSearchEvent(Event event) {
-        if (((StartSearchEvent) event).searchText.get().length() > Constants.MAX_SEARCH_TEXT_LENGTH) {
+        var startSearchEvent = (StartSearchEvent) event;
+        if (startSearchEvent.searchText.get().length() > Constants.MAX_SEARCH_TEXT_LENGTH) {
             log.warn("关键字太长，取消搜索");
-            return;
+            throw new RuntimeException("关键字太长，取消搜索");
+        }
+        String[] searchCaseArray = startSearchEvent.searchCase.get();
+        if (searchCaseArray != null && List.of(searchCaseArray).contains(PathMatchUtil.SearchCase.P)) {
+            try {
+                RegexUtil.getPattern(startSearchEvent.searchText.get(), 0);
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+                throw new RuntimeException("正则表达式输入错误");
+            }
         }
         DatabaseService databaseService = getInstance();
         final long startWaiting = System.currentTimeMillis();
@@ -1786,7 +1805,6 @@ public class DatabaseService {
                 prepareTasksMap.remove(eachTask.getKey());
             }
         }
-        var startSearchEvent = (StartSearchEvent) event;
         var searchInfo = prepareSearchKeywords(startSearchEvent.searchText, startSearchEvent.searchCase, startSearchEvent.keywords);
         var searchTask = prepareTasksMap.get(searchInfo);
         if (searchTask == null) {
@@ -2035,7 +2053,7 @@ public class DatabaseService {
     }
 
     @EventListener(listenClass = CloseEvent.class)
-    private static void restartEvent(Event event) {
+    private static void closeEvent(Event event) {
         stopMonitorDisks(AllConfigs.getInstance().
                 getConfigEntity().
                 getAdvancedConfigEntity().

@@ -78,7 +78,7 @@ public class PathMatchUtil {
                                 String[] keywords,
                                 String[] keywordsLowerCase,
                                 boolean[] isKeywordPath) {
-        if (searchCase != null && List.of(searchCase).contains("p")) {
+        if (searchCase != null && List.of(searchCase).contains(SearchCase.P)) {
             Pattern pattern = RegexUtil.getPattern(searchText, 0);
             if (!pattern.matcher(path).matches()) {
                 return false;
@@ -117,5 +117,6 @@ public class PathMatchUtil {
         public static final String F = "f";
         public static final String FULL = "full";
         public static final String CASE = "case";
+        public static final String P = "p";
     }
 }

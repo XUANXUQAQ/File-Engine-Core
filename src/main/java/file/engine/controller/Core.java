@@ -62,43 +62,68 @@ public class Core {
                             generateSearchKeywordsAndSearchCase(Objects.requireNonNull(ctx.queryParam("searchText")),
                                     Integer.parseInt(Objects.requireNonNull(ctx.queryParam("maxResultNum"))))
                     );
-                    eventManager.putEvent(startSearchEvent);
+                    var ref = new Object() {
+                        Object retVal;
+                    };
+                    eventManager.putEvent(startSearchEvent, successEvent -> successEvent.getReturnValue().ifPresent(o -> {
+                        currentSearchTask = (DatabaseService.SearchTask) o;
+                        final long startTime = System.currentTimeMillis();
+                        while (!currentSearchTask.isSearchDone() && System.currentTimeMillis() - startTime < Constants.MAX_TASK_EXIST_TIME) {
+                            try {
+                                TimeUnit.MILLISECONDS.sleep(50);
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                        LinkedHashSet<String> ret = new LinkedHashSet<>();
+                        ret.addAll(currentSearchTask.getCacheAndPriorityResults());
+                        ret.addAll(currentSearchTask.getTempResults());
+                        ref.retVal = ret;
+                    }), errorEvent -> ref.retVal = Collections.emptySet());
                     eventManager.waitForEvent(startSearchEvent);
-                    startSearchEvent.getReturnValue().ifPresent(o -> currentSearchTask = (DatabaseService.SearchTask) o);
-                    final long startTime = System.currentTimeMillis();
-                    while (!currentSearchTask.isSearchDone() && System.currentTimeMillis() - startTime < Constants.MAX_TASK_EXIST_TIME) {
-                        TimeUnit.MILLISECONDS.sleep(50);
-                    }
-                    LinkedHashSet<String> ret = new LinkedHashSet<>();
-                    ret.addAll(currentSearchTask.getCacheAndPriorityResults());
-                    ret.addAll(currentSearchTask.getTempResults());
-                    ctx.json(ret);
+                    ctx.json(ref.retVal);
                 })
                 .post("/prepareSearch", ctx -> {
                     PrepareSearchEvent prepareSearchEvent = new PrepareSearchEvent(
                             generateSearchKeywordsAndSearchCase(Objects.requireNonNull(ctx.queryParam("searchText")),
                                     Integer.parseInt(Objects.requireNonNull(ctx.queryParam("maxResultNum"))))
                     );
-                    eventManager.putEvent(prepareSearchEvent);
-                    eventManager.waitForEvent(prepareSearchEvent);
-                    prepareSearchEvent.getReturnValue().ifPresent(o -> {
+                    var ref = new Object() {
+                        String ret;
+                    };
+                    eventManager.putEvent(prepareSearchEvent, successEvent -> successEvent.getReturnValue().ifPresent(o -> {
                         DatabaseService.SearchTask searchTask = (DatabaseService.SearchTask) o;
                         currentSearchTask = searchTask;
-                        ctx.result(searchTask.getUuid().toString());
+                        ref.ret = searchTask.getUuid().toString();
+                    }), errorEvent -> {
+                        StringBuilder stringBuilder = new StringBuilder();
+                        stringBuilder.append("failed: ");
+                        errorEvent.getException().ifPresent(ex -> stringBuilder.append(ex.getMessage()));
+                        ref.ret = stringBuilder.toString();
                     });
+                    eventManager.waitForEvent(prepareSearchEvent);
+                    ctx.json(ref.ret);
                 })
                 .post("/searchAsync", ctx -> {
                     StartSearchEvent startSearchEvent = new StartSearchEvent(
                             generateSearchKeywordsAndSearchCase(Objects.requireNonNull(ctx.queryParam("searchText")),
                                     Integer.parseInt(Objects.requireNonNull(ctx.queryParam("maxResultNum"))))
                     );
-                    eventManager.putEvent(startSearchEvent);
-                    eventManager.waitForEvent(startSearchEvent);
-                    startSearchEvent.getReturnValue().ifPresent(o -> {
+                    var ref = new Object() {
+                        String ret;
+                    };
+                    eventManager.putEvent(startSearchEvent, successEvent -> successEvent.getReturnValue().ifPresent(o -> {
                         DatabaseService.SearchTask searchTask = (DatabaseService.SearchTask) o;
                         currentSearchTask = searchTask;
-                        ctx.result(searchTask.getUuid().toString());
+                        ref.ret = searchTask.getUuid().toString();
+                    }), error -> {
+                        StringBuilder stringBuilder = new StringBuilder();
+                        stringBuilder.append("failed: ");
+                        error.getException().ifPresent(ex -> stringBuilder.append(ex.getMessage()));
+                        ref.ret = stringBuilder.toString();
                     });
+                    eventManager.waitForEvent(startSearchEvent);
+                    ctx.json(ref.ret);
                 })
                 .delete("/search", ctx -> eventManager.putEvent(new StopSearchEvent()))
                 .get("/cacheResult", ctx -> ctx.json(getSearchCacheResults(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("startIndex"))))))
