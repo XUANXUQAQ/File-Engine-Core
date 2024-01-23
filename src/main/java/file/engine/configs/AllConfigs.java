@@ -21,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.BindException;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -215,12 +214,10 @@ public class AllConfigs {
     private static boolean isAvailable(int port) {
         try {
             new ServerSocket(port).close();
-        } catch (IOException e) {
-            if (e instanceof BindException) {
-                return false;
-            }
+            return true;
+        } catch (Exception e) {
+            return false;
         }
-        return true;
     }
 
     /**
