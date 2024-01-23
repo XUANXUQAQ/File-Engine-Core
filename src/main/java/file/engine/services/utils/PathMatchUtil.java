@@ -6,6 +6,8 @@ import file.engine.utils.file.FileUtil;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.regex.Pattern;
 
 @SuppressWarnings({"IndexOfReplaceableByContains"})
 public class PathMatchUtil {
@@ -76,7 +78,12 @@ public class PathMatchUtil {
                                 String[] keywords,
                                 String[] keywordsLowerCase,
                                 boolean[] isKeywordPath) {
-        if (notMatched(path, isIgnoreCase, keywords, keywordsLowerCase, isKeywordPath)) {
+        if (searchCase != null && List.of(searchCase).contains("p")) {
+            Pattern pattern = RegexUtil.getPattern(searchText, 0);
+            if (!pattern.matcher(path).matches()) {
+                return false;
+            }
+        } else if (notMatched(path, isIgnoreCase, keywords, keywordsLowerCase, isKeywordPath)) {
             return false;
         }
         if (searchCase == null) {
