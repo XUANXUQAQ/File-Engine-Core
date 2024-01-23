@@ -21,8 +21,6 @@ public class Constants {
 
     public static final String CONFIG_FILE = "user/settings.json";
 
-    public static final String PORT_FILE_NAME = "tmp/$$port";
-
     public static final int MAX_TASK_EXIST_TIME = 5 * 60 * 1000;
 
     public static final int THREAD_POOL_AWAIT_TIMEOUT = 5;
