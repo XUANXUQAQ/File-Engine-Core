@@ -104,7 +104,7 @@ public enum ThreadPoolUtil {
      */
     public void shutdown() {
         isShutdown.set(true);
-        cachedThreadPool.shutdown();
+        cachedThreadPool.shutdownNow();
         printInfo((ThreadPoolExecutor) cachedThreadPool);
     }
 

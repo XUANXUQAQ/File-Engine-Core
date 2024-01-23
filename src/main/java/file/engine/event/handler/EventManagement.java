@@ -404,7 +404,7 @@ public class EventManagement {
     }
 
     private void eventHandle(@NonNull Event event) {
-        while (true) {
+        while (!exit) {
             //判断任务是否执行完成或者失败
             if (event.isFinished()) {
                 return;
