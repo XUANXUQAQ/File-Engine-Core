@@ -1,5 +1,6 @@
 package file.engine.utils;
 
+import file.engine.configs.Constants;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.*;
@@ -8,7 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public enum ThreadPoolUtil {
     INSTANCE;
-    private static final int THREAD_POOL_AWAIT_TIMEOUT = 60;
     private final ExecutorService cachedThreadPool;
     private final AtomicBoolean isShutdown = new AtomicBoolean(false);
 
@@ -115,7 +115,7 @@ public enum ThreadPoolUtil {
      */
     private void printInfo(ThreadPoolExecutor threadPoolExecutor) {
         try {
-            if (!threadPoolExecutor.awaitTermination(THREAD_POOL_AWAIT_TIMEOUT, TimeUnit.SECONDS)) {
+            if (!threadPoolExecutor.awaitTermination(Constants.THREAD_POOL_AWAIT_TIMEOUT, TimeUnit.SECONDS)) {
                 System.err.println("线程池等待超时");
                 int queueSize = threadPoolExecutor.getQueue().size();
                 System.err.println("当前排队线程数：" + queueSize);

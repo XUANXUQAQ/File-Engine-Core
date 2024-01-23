@@ -25,6 +25,8 @@ public class Constants {
 
     public static final int MAX_TASK_EXIST_TIME = 5 * 60 * 1000;
 
+    public static final int THREAD_POOL_AWAIT_TIMEOUT = 5;
+
     private Constants() {
         throw new RuntimeException("not allowed");
     }

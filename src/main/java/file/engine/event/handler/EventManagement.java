@@ -2,6 +2,7 @@ package file.engine.event.handler;
 
 import file.engine.annotation.EventListener;
 import file.engine.annotation.EventRegister;
+import file.engine.configs.Constants;
 import file.engine.event.handler.impl.stop.CloseEvent;
 import file.engine.utils.ThreadPoolUtil;
 import file.engine.utils.clazz.scan.ClassScannerUtil;
@@ -127,7 +128,16 @@ public class EventManagement {
     private boolean executeTaskFailed(Event event) {
         event.incrementExecuteTimes();
         if (event instanceof CloseEvent) {
-            handleClose((CloseEvent) event);
+            Thread thread = new Thread(() -> handleClose((CloseEvent) event));
+            thread.start();
+            final long start = System.currentTimeMillis();
+            while (thread.isAlive() && System.currentTimeMillis() - start > Constants.THREAD_POOL_AWAIT_TIMEOUT * 1000) {
+                try {
+                    TimeUnit.MILLISECONDS.sleep(10);
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
             System.exit(0);
         } else {
             return handleNormalEvent(event);
@@ -230,7 +240,7 @@ public class EventManagement {
                 }
                 String registerClassName = annotation.registerClass().getName();
                 if (CloseEvent.class.getName().equals(registerClassName)) {
-                    throw new RuntimeException("RestartEvent不可被注册事件处理器");
+                    throw new RuntimeException("CloseEvent不可被注册事件处理器");
                 }
                 registerHandler(registerClassName, method);
             };
