@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "path_util.h"
-
-#include <algorithm>
+#include <regex>
 
 #include "str_convert.h"
 
@@ -173,19 +172,29 @@ int is_dir_or_file(const char* path)
     return -1;
 }
 
+void tolowerstr(char* str);
 bool match_func(const char* path, const search_info* info)
 {
     if (path == nullptr || !path[0])
     {
         return false;
     }
-    if (not_matched(path, info->is_ignore_search_case(), info->get_keywords(), info->get_keywords_lower_case(),
-                    static_cast<int>(info->get_keywords()->size()),
-                    info->is_keyword_path_value()))
+    const auto search_case = info->get_search_case_num();
+    if (search_case & 1 << 3)
+    {
+        // regex
+        const std::regex re(info->get_search_text());
+        if (auto&& search_res = std::regex_search(path, re); !search_res)
+        {
+            return false;
+        }
+    }
+    else if (not_matched(path, info->is_ignore_search_case(), info->get_keywords(), info->get_keywords_lower_case(),
+                         static_cast<int>(info->get_keywords()->size()),
+                         info->is_keyword_path_value()))
     {
         return false;
     }
-    const auto search_case = info->get_search_case_num();
     if (search_case == 0)
     {
         return is_file_exist(path);
@@ -207,7 +216,7 @@ bool match_func(const char* path, const search_info* info)
     {
         return false;
     }
-    if (search_case & 2)
+    if (search_case & 1 << 1)
     {
         // dir
         if (is_dir_or_file(path) == 0)
@@ -223,15 +232,17 @@ bool match_func(const char* path, const search_info* info)
     {
         return false;
     }
-    if (search_case & 4)
+    if (search_case & 1 << 2)
     {
-        auto&& tmp_search_text = info->get_search_text();
+        // full
+        char search_text_arr[MAX_PATH_LENGTH]{0};
+        strcpy_s(search_text_arr, info->get_search_text().c_str());
         char file_name[MAX_PATH_LENGTH]{0};
         get_file_name(path, file_name);
-        std::string tmp_file_name(file_name);
-        std::transform(tmp_search_text.begin(), tmp_search_text.end(), tmp_search_text.begin(), std::tolower);
-        std::transform(tmp_file_name.begin(), tmp_file_name.end(), tmp_file_name.begin(), std::tolower);
-        if (tmp_search_text == tmp_file_name)
+
+        tolowerstr(search_text_arr);
+        tolowerstr(file_name);
+        if (strcmp(search_text_arr, file_name) == 0)
         {
             is_all_case_matched |= 4;
         }
@@ -241,4 +252,13 @@ bool match_func(const char* path, const search_info* info)
         is_all_case_matched |= 4;
     }
     return is_all_case_matched == 7 && is_file_exist(path);
+}
+
+void tolowerstr(char* str)
+{
+    while (*str)
+    {
+        *str = static_cast<char>(std::tolower(*str));
+        ++str;
+    }
 }

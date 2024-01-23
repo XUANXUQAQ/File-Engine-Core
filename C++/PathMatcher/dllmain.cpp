@@ -91,13 +91,17 @@ JNIEXPORT jobjectArray JNICALL Java_file_engine_dllInterface_PathMatcher_match
             {
                 search_case_num |= 1;
             }
-            if (each_case == "d")
+            else if (each_case == "d")
             {
-                search_case_num |= 2;
+                search_case_num |= 1 << 1;
             }
-            if (each_case == "full")
+            else if (each_case == "full")
             {
-                search_case_num |= 4;
+                search_case_num |= 1 << 2;
+            }
+            else if (each_case == "p")
+            {
+                search_case_num |= 1 << 3;
             }
         }
     }

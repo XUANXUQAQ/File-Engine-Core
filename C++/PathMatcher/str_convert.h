@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <cstdlib>
 
 static constexpr unsigned short gbk2_utf16_2_host[] =
 {
