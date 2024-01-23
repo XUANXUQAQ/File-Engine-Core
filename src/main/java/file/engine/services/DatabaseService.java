@@ -808,8 +808,9 @@ public class DatabaseService {
                 String priority = getPriorityFromSelectSql(eachSql);
                 String key = diskStr + "," + tableName + "," + priority;
                 long matchedNum = 0;
-                boolean fallbackFlag = !isEnableGPUAccelerate;
-                if (isEnableGPUAccelerate) {
+                boolean isPatternMatch = searchTask.searchInfo.searchCase != null && List.of(searchTask.searchInfo.searchCase).contains(PathMatchUtil.SearchCase.P);
+                boolean fallbackFlag = !isEnableGPUAccelerate || isPatternMatch;
+                if (isEnableGPUAccelerate && !isPatternMatch) {
                     if (GPUAccelerator.INSTANCE.isMatchDone(key)) {
                         matchedNum = GPUAccelerator.INSTANCE.matchedNumber(key);
                     } else {
@@ -1850,7 +1851,8 @@ public class DatabaseService {
             countDownLatch.countDown();
         });
         databaseService.prepareSearchTasks(searchTask);
-        if (isEnableGPUAccelerate && !searchTask.shouldStopSearch()) {
+        boolean isPatternMatch = searchTask.searchInfo.searchCase != null && List.of(searchTask.searchInfo.searchCase).contains(PathMatchUtil.SearchCase.P);
+        if (isEnableGPUAccelerate && !searchTask.shouldStopSearch() && !isPatternMatch) {
             threadPoolUtil.executeTask(() -> {
                 // 退出上一次搜索
                 final var timeout = 3000;
