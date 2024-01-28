@@ -2285,6 +2285,8 @@ public class DatabaseService {
         private final UUID uuid = UUID.randomUUID();
         private volatile boolean searchDoneFlag = false;
         private volatile long taskUsedTimeMills = System.currentTimeMillis();
+        @Getter
+        private final long taskCreateTimeMills = System.currentTimeMillis();
         private volatile boolean shouldStopSearchFlag = false;
         private final Integer maxResultNum;
 

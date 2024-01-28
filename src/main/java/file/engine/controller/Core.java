@@ -15,6 +15,7 @@ import file.engine.event.handler.impl.database.*;
 import file.engine.event.handler.impl.stop.CloseEvent;
 import file.engine.services.DatabaseService;
 import file.engine.utils.RegexUtil;
+import file.engine.utils.ThreadPoolUtil;
 import file.engine.utils.gson.GsonUtil;
 import io.javalin.Javalin;
 import io.javalin.http.HttpStatus;
@@ -30,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class Core {
 
-    private static volatile DatabaseService.SearchTask currentSearchTask;
+    private static final ConcurrentLinkedQueue<DatabaseService.SearchTask> searchTaskQueue = new ConcurrentLinkedQueue<>();
     private static Javalin server;
 
     @EventListener(listenClass = BootSystemEvent.class)
@@ -64,9 +65,9 @@ public class Core {
                         Object retVal;
                     };
                     eventManager.putEvent(startSearchEvent, successEvent -> successEvent.getReturnValue().ifPresent(o -> {
-                        currentSearchTask = (DatabaseService.SearchTask) o;
+                        var searchTask = (DatabaseService.SearchTask) o;
                         final long startTime = System.currentTimeMillis();
-                        while (!currentSearchTask.isSearchDone() && System.currentTimeMillis() - startTime < Constants.MAX_TASK_EXIST_TIME) {
+                        while (!searchTask.isSearchDone() && System.currentTimeMillis() - startTime < Constants.MAX_TASK_EXIST_TIME) {
                             try {
                                 TimeUnit.MILLISECONDS.sleep(50);
                             } catch (InterruptedException e) {
@@ -74,8 +75,8 @@ public class Core {
                             }
                         }
                         LinkedHashSet<String> ret = new LinkedHashSet<>();
-                        ret.addAll(currentSearchTask.getCacheAndPriorityResults());
-                        ret.addAll(currentSearchTask.getTempResults());
+                        ret.addAll(searchTask.getCacheAndPriorityResults());
+                        ret.addAll(searchTask.getTempResults());
                         ref.retVal = ret;
                     }), errorEvent -> ref.retVal = Collections.emptySet());
                     eventManager.waitForEvent(startSearchEvent);
@@ -91,7 +92,7 @@ public class Core {
                     };
                     eventManager.putEvent(prepareSearchEvent, successEvent -> successEvent.getReturnValue().ifPresent(o -> {
                         DatabaseService.SearchTask searchTask = (DatabaseService.SearchTask) o;
-                        currentSearchTask = searchTask;
+                        searchTaskQueue.offer(searchTask);
                         ref.ret = searchTask.getUuid().toString();
                     }), errorEvent -> {
                         StringBuilder stringBuilder = new StringBuilder();
@@ -112,7 +113,7 @@ public class Core {
                     };
                     eventManager.putEvent(startSearchEvent, successEvent -> successEvent.getReturnValue().ifPresent(o -> {
                         DatabaseService.SearchTask searchTask = (DatabaseService.SearchTask) o;
-                        currentSearchTask = searchTask;
+                        searchTaskQueue.offer(searchTask);
                         ref.ret = searchTask.getUuid().toString();
                     }), error -> {
                         StringBuilder stringBuilder = new StringBuilder();
@@ -124,8 +125,15 @@ public class Core {
                     ctx.json(ref.ret);
                 })
                 .delete("/search", ctx -> eventManager.putEvent(new StopSearchEvent()))
-                .get("/cacheResult", ctx -> ctx.json(getSearchCacheResults(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("startIndex"))))))
-                .get("/result", ctx -> ctx.json(getSearchResults(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("startIndex"))))))
+                .get("/cacheResult", ctx -> ctx.json(
+                        getSearchCacheResults(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("startIndex"))), ctx.queryParam("uuid"))
+                ))
+                .get("/result", ctx -> ctx.json(
+                        getSearchResults(Integer.parseInt(Objects.requireNonNull(ctx.queryParam("startIndex"))), ctx.queryParam("uuid"))
+                ))
+                .delete("/result", ctx -> ctx.result(
+                        String.valueOf(searchTaskQueue.removeIf(searchTask -> Objects.equals(searchTask.getUuid().toString(), ctx.queryParam("uuid"))))
+                ))
                 // cache
                 .post("/cache", ctx -> eventManager.putEvent(new AddToCacheEvent(ctx.queryParam("path"))))
                 .get("/cache", ctx -> ctx.json(databaseService.getCache()))
@@ -144,6 +152,7 @@ public class Core {
                 .delete("/clearSuffixPriority", ctx -> eventManager.putEvent(new ClearSuffixPriorityMapEvent()));
         server = app;
         app.start(allConfigs.getConfigEntity().getPort());
+        startClearTaskThread();
     }
 
     @EventListener(listenClass = CloseEvent.class)
@@ -153,26 +162,70 @@ public class Core {
         }
     }
 
-    private static HashMap<String, Object> getSearchResults(int startIndex) {
+    private static void startClearTaskThread() {
+        ThreadPoolUtil.getInstance().executeTask(() -> {
+            EventManagement eventManagement = EventManagement.getInstance();
+            long startCheckTime = System.currentTimeMillis();
+            while (eventManagement.notMainExit()) {
+                if (System.currentTimeMillis() - startCheckTime > Constants.MAX_TASK_EXIST_TIME) {
+                    startCheckTime = System.currentTimeMillis();
+                    ArrayList<DatabaseService.SearchTask> taskToRemove = new ArrayList<>();
+                    searchTaskQueue.forEach(searchTask -> {
+                        if (System.currentTimeMillis() - searchTask.getTaskCreateTimeMills() > Constants.MAX_TASK_EXIST_TIME) {
+                            taskToRemove.add(searchTask);
+                        }
+                    });
+                    searchTaskQueue.removeAll(taskToRemove);
+                }
+                try {
+                    TimeUnit.MILLISECONDS.sleep(100);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
+
+    private static HashMap<String, Object> getSearchResults(int startIndex, String uuid) {
         HashMap<String, Object> retWrapper = new HashMap<>();
-        if (currentSearchTask != null) {
+        getSearchTaskByUUID(uuid).ifPresent(currentSearchTask -> {
             var tempResults = currentSearchTask.getTempResults();
-            genSearchResultMap(startIndex, retWrapper, tempResults);
-        }
+            genSearchResultMap(startIndex, currentSearchTask, retWrapper, tempResults);
+        });
         return retWrapper;
     }
 
-    private static HashMap<String, Object> getSearchCacheResults(int startIndex) {
+    private static HashMap<String, Object> getSearchCacheResults(int startIndex, String uuid) {
         HashMap<String, Object> ret = new HashMap<>();
-        if (currentSearchTask != null) {
+        getSearchTaskByUUID(uuid).ifPresent(currentSearchTask -> {
             var cacheAndPriorityResults = currentSearchTask.getCacheAndPriorityResults();
-            genSearchResultMap(startIndex, ret, cacheAndPriorityResults);
-        }
+            genSearchResultMap(startIndex, currentSearchTask, ret, cacheAndPriorityResults);
+        });
         return ret;
     }
 
-    private static void genSearchResultMap(int startIndex, HashMap<String, Object> retWrapper, ConcurrentLinkedQueue<String> tempResults) {
-        retWrapper.put("uuid", currentSearchTask.getUuid().toString());
+    private static Optional<DatabaseService.SearchTask> getSearchTaskByUUID(String uuid) {
+        DatabaseService.SearchTask currentSearchTask;
+        if (uuid == null) {
+            currentSearchTask = searchTaskQueue.peek();
+        } else {
+            var tmpList = searchTaskQueue.stream()
+                    .filter(searchTask -> uuid.equals(searchTask.getUuid().toString()))
+                    .toList();
+            if (tmpList.isEmpty()) {
+                currentSearchTask = null;
+            } else {
+                currentSearchTask = tmpList.get(0);
+            }
+        }
+        return Optional.ofNullable(currentSearchTask);
+    }
+
+    private static void genSearchResultMap(int startIndex,
+                                           DatabaseService.SearchTask searchTask,
+                                           HashMap<String, Object> retWrapper,
+                                           ConcurrentLinkedQueue<String> tempResults) {
+        retWrapper.put("uuid", searchTask.getUuid().toString());
         Iterator<String> iterator = tempResults.iterator();
         for (int i = 0; i < startIndex; i++) {
             if (iterator.hasNext()) {
@@ -188,7 +241,7 @@ public class Core {
         }
         retWrapper.put("data", list);
         retWrapper.put("nextIndex", list.size() + startIndex);
-        retWrapper.put("isDone", currentSearchTask.isSearchDone());
+        retWrapper.put("isDone", searchTask.isSearchDone());
     }
 
     /**
