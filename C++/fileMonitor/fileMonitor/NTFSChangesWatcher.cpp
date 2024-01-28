@@ -1,5 +1,6 @@
 ﻿#include "NTFSChangesWatcher.h"
 
+#include <algorithm>
 #include <chrono>
 #include <ranges>
 #include "string_wstring_converter.h"
@@ -374,21 +375,30 @@ void NTFSChangesWatcher::showRecord(std::u16string& full_path, USN_RECORD* recor
     // 清除最不常使用缓存
     if (remain_cache_number <= 0)
     {
-        auto&& least_used_cache = std::ranges::min_element(frn_record_pfrn_map_,
-                                                           [&](const std::pair<DWORDLONG,
-                                                                               std::pair<
-                                                                                   std::pair<std::u16string, DWORDLONG>,
-                                                                                   DWORDLONG>>& left,
-                                                               const std::pair<DWORDLONG,
-                                                                               std::pair<
-                                                                                   std::pair<std::u16string, DWORDLONG>,
-                                                                                   DWORDLONG>>& right)
-                                                           {
-                                                               return left.second.first.second <
-                                                                   right.second.first.second;
-                                                           });
-        frn_record_pfrn_map_.erase(least_used_cache->first);
-        ++remain_cache_number;
+        std::vector<std::pair<const DWORDLONG, std::pair<std::pair<std::u16string, DWORDLONG>, DWORDLONG>>*> tmp_vec;
+        for (auto&& each : frn_record_pfrn_map_)
+        {
+            tmp_vec.emplace_back(&each);
+        }
+
+        std::ranges::sort(tmp_vec.begin(), tmp_vec.end(),
+                          [&](const std::pair<const DWORDLONG,
+                                              std::pair<
+                                                  std::pair<std::u16string, DWORDLONG>,
+                                                  DWORDLONG>>* left,
+                              const std::pair<const DWORDLONG,
+                                              std::pair<
+                                                  std::pair<std::u16string, DWORDLONG>,
+                                                  DWORDLONG>>* right)
+                          {
+                              return left->second.first.second <
+                                  right->second.first.second;
+                          });
+        for (unsigned i = 0; i < MAX_USN_CACHE_SIZE / 1000; ++i)
+        {
+            frn_record_pfrn_map_.erase(tmp_vec[i]->first);
+            ++remain_cache_number;
+        }
     }
     //检查缓存是否已存在
     if (auto&& val = frn_record_pfrn_map_.find(record->ParentFileReferenceNumber);
