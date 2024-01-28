@@ -276,9 +276,6 @@ public class MainClass {
         //tmp
         File tmp = new File("tmp");
         isSucceeded &= createFileOrFolder(tmp, false, false);
-        //port
-        File port = new File(Constants.PORT_FILE_NAME);
-        isSucceeded &= createFileOrFolder(port, true, true);
         if (!isSucceeded) {
             throw new RuntimeException("初始化依赖项失败");
         }

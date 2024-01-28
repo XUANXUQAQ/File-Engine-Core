@@ -18,8 +18,10 @@ import file.engine.utils.system.properties.IsDebug;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -151,7 +153,12 @@ public class AllConfigs {
     }
 
     private void readServerPort(Map<String, Object> settingsInJson) {
-        configEntity.setPort(getFromJson(settingsInJson, "port", 0));
+        Integer port = getFromJson(settingsInJson, "port", 50721);
+        if (port != null && isAvailable(port)) {
+            configEntity.setPort(port);
+        } else {
+            throw new RuntimeException("Port is already used");
+        }
     }
 
     private void readCacheNumLimit(Map<String, Object> settingsInJson) {
@@ -202,6 +209,15 @@ public class AllConfigs {
             }
         }
         return "";
+    }
+
+    private static boolean isAvailable(int port) {
+        try {
+            new ServerSocket(port).close();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**

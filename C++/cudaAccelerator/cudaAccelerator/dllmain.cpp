@@ -366,6 +366,10 @@ JNIEXPORT void JNICALL Java_file_engine_dllInterface_gpu_CudaAccelerator_initCac
     for (jsize i = 0; i < records_len; ++i)
     {
         const auto record_from_supplier = env->GetObjectArrayElement(records_obj, i);
+        if (record_from_supplier == nullptr)
+        {
+            continue;
+        }
         const auto jstring_val = reinterpret_cast<jstring>(record_from_supplier);
         const auto record = env->GetStringUTFChars(jstring_val, nullptr);
         if (const auto record_len = strlen(record); record_len < MAX_PATH_LENGTH)
