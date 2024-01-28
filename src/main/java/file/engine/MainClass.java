@@ -87,7 +87,8 @@ public class MainClass {
     private static void initDatabase() {
         EventManagement eventManagement = EventManagement.getInstance();
         InitializeDatabaseEvent initializeDatabaseEvent = new InitializeDatabaseEvent();
-        eventManagement.putEvent(initializeDatabaseEvent);
+        eventManagement.putEvent(initializeDatabaseEvent, event -> log.info("Initialize database success"),
+                event -> event.getException().ifPresent(ex -> log.error(ex.getMessage(), ex)));
         if (eventManagement.waitForEvent(initializeDatabaseEvent, 5 * 60 * 1000)) {
             throw new RuntimeException("Initialize database failed");
         }
@@ -96,7 +97,8 @@ public class MainClass {
     private static void setAllConfigs() {
         EventManagement eventManagement = EventManagement.getInstance();
         SetConfigsEvent setConfigsEvent = new SetConfigsEvent(null);
-        eventManagement.putEvent(setConfigsEvent);
+        eventManagement.putEvent(setConfigsEvent, event -> log.info("Read config success"),
+                event -> event.getException().ifPresent(ex -> log.error(ex.getMessage(), ex)));
         if (eventManagement.waitForEvent(setConfigsEvent)) {
             throw new RuntimeException("Set configs failed");
         }
