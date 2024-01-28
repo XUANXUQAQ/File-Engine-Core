@@ -1223,7 +1223,6 @@ public class DatabaseService {
                         try {
                             stmt = SQLiteUtil.getStatement(sqlWithTaskId.diskStr);
                         } catch (RuntimeException e) {
-                            log.warn(e.getMessage(), e);
                             continue;
                         }
                         statementHashMap.put(sqlWithTaskId.diskStr, stmt);
@@ -1245,7 +1244,7 @@ public class DatabaseService {
                             }
                         }
                     }
-                } catch (SQLException e) {
+                } catch (Exception e) {
                     log.error("error: {}", e.getMessage(), e);
                     // 标记下次启动时检查损坏数据库
                     dbIntegrityMap.put(sqlWithTaskId.diskStr, false);
@@ -1255,9 +1254,14 @@ public class DatabaseService {
                 Statement v = entry.getValue();
                 try {
                     v.execute("COMMIT;");
-                    v.close();
                 } catch (SQLException e) {
                     log.error("error: {}", e.getMessage(), e);
+                } finally {
+                    try {
+                        v.close();
+                    } catch (SQLException e) {
+                        log.error("error {}", e.getMessage(), e);
+                    }
                 }
             }
             sqlCommandQueue.removeAll(tempCommandSet);
