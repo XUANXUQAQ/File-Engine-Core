@@ -248,14 +248,19 @@ public class AllConfigs {
         if (json == null) {
             return (T) defaultObj;
         }
-        Object tmp = json.get(key);
-        if (tmp == null) {
-            if (IsDebug.isDebug()) {
-                log.error("配置文件读取到null值   key : " + key);
+        try {
+            Object tmp = json.get(key);
+            if (tmp == null) {
+                if (IsDebug.isDebug()) {
+                    log.error("配置文件读取到null值   key : " + key);
+                }
+                return (T) defaultObj;
             }
+            return (T) tmp;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
             return (T) defaultObj;
         }
-        return (T) tmp;
     }
 
     /**
@@ -297,7 +302,7 @@ public class AllConfigs {
         try {
             Files.writeString(Path.of(Constants.CONFIG_FILE), GsonUtil.INSTANCE.getGson().toJson(configEntity), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            log.error(e.getMessage(), e);
         }
     }
 
