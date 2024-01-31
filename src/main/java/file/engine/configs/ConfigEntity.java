@@ -29,9 +29,6 @@ public class ConfigEntity {
     @SerializedName("searchThreadNumber")
     private int searchThreadNumber;
 
-    @SerializedName("port")
-    private int port;
-
     @SerializedName("advancedConfigs")
     private AdvancedConfigEntity advancedConfigEntity;
 }

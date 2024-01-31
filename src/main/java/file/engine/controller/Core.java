@@ -36,7 +36,6 @@ public class Core {
     @EventListener(listenClass = BootSystemEvent.class)
     private static void startServer(Event event) {
         JavalinLogger.enabled = false;
-        var allConfigs = AllConfigs.getInstance();
         var databaseService = DatabaseService.getInstance();
         var eventManager = EventManagement.getInstance();
         var app = Javalin.create(config -> config.jsonMapper(new JavalinGson(GsonUtil.INSTANCE.getGson())))
@@ -148,7 +147,7 @@ public class Core {
                 )))
                 .delete("/clearSuffixPriority", ctx -> eventManager.putEvent(new ClearSuffixPriorityMapEvent()));
         server = app;
-        app.start(allConfigs.getConfigEntity().getPort());
+        app.start(((BootSystemEvent) event).port);
         startClearTaskThread();
     }
 
