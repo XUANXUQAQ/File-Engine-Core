@@ -31,6 +31,10 @@ public class MainClass {
     private static final int UPDATE_DATABASE_THRESHOLD = 3;
 
     public static void main(String[] args) {
+        if (args.length != 1) {
+            throw new RuntimeException("Please specify a port");
+        }
+        int port = Integer.parseInt(args[0]);
         try {
             setSystemProperties();
 
@@ -51,7 +55,7 @@ public class MainClass {
             initDatabase();
             monitorDisks();
             // 初始化全部完成，发出启动系统事件
-            if (sendBootSystemSignal()) {
+            if (sendBootSystemSignal(port)) {
                 throw new RuntimeException("Boot System Failed");
             }
 
@@ -229,10 +233,10 @@ public class MainClass {
     /**
      * 初始化全部完成，发出启动系统事件
      */
-    private static boolean sendBootSystemSignal() {
+    private static boolean sendBootSystemSignal(int port) {
         EventManagement eventManagement = EventManagement.getInstance();
 
-        Event event = new BootSystemEvent();
+        Event event = new BootSystemEvent(port);
         eventManagement.putEvent(event);
         return eventManagement.waitForEvent(event);
     }

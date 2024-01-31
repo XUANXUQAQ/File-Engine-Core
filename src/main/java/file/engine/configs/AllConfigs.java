@@ -21,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -152,15 +151,6 @@ public class AllConfigs {
         }
     }
 
-    private void readServerPort(Map<String, Object> settingsInJson) {
-        Integer port = getFromJson(settingsInJson, "port", 50721);
-        if (port != null && isAvailable(port)) {
-            configEntity.setPort(port);
-        } else {
-            throw new RuntimeException("Port is already used");
-        }
-    }
-
     private void readCacheNumLimit(Map<String, Object> settingsInJson) {
         configEntity.setCacheNumLimit(getFromJson(settingsInJson, "cacheNumLimit", 1000));
     }
@@ -209,15 +199,6 @@ public class AllConfigs {
             }
         }
         return "";
-    }
-
-    private static boolean isAvailable(int port) {
-        try {
-            new ServerSocket(port).close();
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
     }
 
     /**
@@ -287,7 +268,6 @@ public class AllConfigs {
         readIgnorePath(settingsInJson);
         readPriorityFolder(settingsInJson);
         readCacheNumLimit(settingsInJson);
-        readServerPort(settingsInJson);
         readDisks(settingsInJson);
         readIsEnableGpuAccelerate(settingsInJson);
         readGpuDevice(settingsInJson);

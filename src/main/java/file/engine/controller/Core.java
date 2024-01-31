@@ -150,7 +150,7 @@ public class Core {
                 )))
                 .delete("/clearSuffixPriority", ctx -> eventManager.putEvent(new ClearSuffixPriorityMapEvent()));
         server = app;
-        app.start(allConfigs.getConfigEntity().getPort());
+        app.start(((BootSystemEvent) event).port);
         startClearTaskThread();
     }
 
