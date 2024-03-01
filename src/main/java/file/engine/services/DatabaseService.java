@@ -21,7 +21,6 @@ import file.engine.services.utils.AdminUtil;
 import file.engine.services.utils.PathMatchUtil;
 import file.engine.services.utils.StringUtf8SumUtil;
 import file.engine.services.utils.connection.SQLiteUtil;
-import file.engine.utils.Bit;
 import file.engine.utils.ProcessUtil;
 import file.engine.utils.RegexUtil;
 import file.engine.utils.ThreadPoolUtil;
@@ -718,18 +717,20 @@ public class DatabaseService {
     /**
      * 根据上面分配的位信息，从第二位开始，与taskStatus做与运算，并向右偏移，若结果为1，则表示该任务完成
      */
-    private void waitForTasks(SearchTask searchTask) {
+    private void waitForTasks(SearchTask searchTask, CountDownLatch countDownLatch) {
         try {
-            var eventManagement = EventManagement.getInstance();
-            final long startWaiting = System.currentTimeMillis();
-            AllConfigs allConfigs = AllConfigs.getInstance();
-            while (!searchTask.taskStatus.equals(searchTask.allTaskStatus) &&
-                    eventManagement.notMainExit() &&
-                    System.currentTimeMillis() - startWaiting < allConfigs
-                            .getConfigEntity()
-                            .getAdvancedConfigEntity()
-                            .getWaitForSearchTasksTimeoutInMills()) {
-                TimeUnit.MILLISECONDS.sleep(1);
+            if (!countDownLatch.await(60, TimeUnit.SECONDS)) {
+                var eventManagement = EventManagement.getInstance();
+                final long startWaiting = System.currentTimeMillis();
+                var allConfigs = AllConfigs.getInstance();
+                while (searchThreadCount.get() != 0 &&
+                        eventManagement.notMainExit() &&
+                        System.currentTimeMillis() - startWaiting < allConfigs
+                                .getConfigEntity()
+                                .getAdvancedConfigEntity()
+                                .getWaitForSearchTasksTimeoutInMills()) {
+                    TimeUnit.MILLISECONDS.sleep(1);
+                }
             }
         } catch (Exception e) {
             log.error("error: {}", e.getMessage(), e);
@@ -764,15 +765,10 @@ public class DatabaseService {
      * 创建搜索任务
      * nonFormattedSql将会生成从list0-40，根据priority从高到低排序的SQL语句，第一个map中key保存未格式化的sql，value保存表名称
      * 生成任务顺序会根据list的权重和priority来生成
-     * <p>
-     * taskStatus      用于保存任务信息，这是一个通用变量，从第二个位开始，每一个位代表一个任务，当任务完成，该位将被置为1，否则为0，例如第一个和第三个任务完成，第二个未完成，则为1010
-     * allTaskStatus   所有的任务信息，从第二位开始，只要有任务被创建，该位就为1，例如三个任务被创建，则为1110
-     * taskMap         任务
      *
      * @param nonFormattedSql 未格式化搜索字段的SQL
      */
     private void addSearchTasks(ArrayList<LinkedHashMap<String, String>> nonFormattedSql, SearchTask searchTask) {
-        Bit taskNumber = new Bit(new byte[]{1});
         AllConfigs allConfigs = AllConfigs.getInstance();
         String availableDisks = allConfigs.getAvailableDisks();
         for (String eachDisk : RegexUtil.comma.split(availableDisks)) {
@@ -780,16 +776,8 @@ public class DatabaseService {
             searchTask.taskMap.put(eachDisk, tasks);
             //向任务队列tasks添加任务
             for (var commandsMap : nonFormattedSql) {
-                //为每个任务分配的位，不断左移以不断进行分配
-                taskNumber.shiftLeft(1);
-                Bit currentTaskNum = new Bit(taskNumber);
-                //记录当前任务信息到allTaskStatus
-                byte[] origin;
-                do {
-                    origin = searchTask.allTaskStatus.getBytes();
-                } while (!searchTask.allTaskStatus.compareAndSet(origin, Bit.or(origin, currentTaskNum.getBytes())));
                 //每一个任务负责查询一个priority和list0-list40生成的41个SQL
-                addTaskForDatabase0(eachDisk, tasks, commandsMap, currentTaskNum, searchTask);
+                addTaskForDatabase0(eachDisk, tasks, commandsMap, searchTask);
             }
         }
     }
@@ -797,7 +785,6 @@ public class DatabaseService {
     private void addTaskForDatabase0(String diskChar,
                                      ConcurrentLinkedQueue<Runnable> tasks,
                                      LinkedHashMap<String, String> sqlToExecute,
-                                     Bit currentTaskNum,
                                      SearchTask searchTask) {
         tasks.add(() -> {
             String diskStr = String.valueOf(diskChar.charAt(0));
@@ -832,11 +819,6 @@ public class DatabaseService {
                     updateTableWeight(tableName, weight);
                 }
             }
-            //执行完后将对应的线程flag设为1
-            byte[] originalBytes;
-            do {
-                originalBytes = searchTask.taskStatus.getBytes();
-            } while (!searchTask.taskStatus.compareAndSet(originalBytes, Bit.or(originalBytes, currentTaskNum.getBytes())));
         });
     }
 
@@ -957,24 +939,28 @@ public class DatabaseService {
                     continue;
                 }
                 try {
-                    searchThreadCount.getAndIncrement();
                     runnable.run();
                 } catch (Exception e) {
                     log.error("error: {}", e.getMessage(), e);
-                } finally {
-                    searchThreadCount.getAndDecrement();
                 }
             }
         };
         var taskQueues = searchTask.taskMap.values();
+        int searchThreadNumber = AllConfigs.getInstance().getConfigEntity().getSearchThreadNumber();
+        CountDownLatch countDownLatch = new CountDownLatch(taskQueues.size() * searchThreadNumber);
         for (var taskQueue : taskQueues) {
-            int searchThreadNumber = AllConfigs.getInstance().getConfigEntity().getSearchThreadNumber();
             for (int i = 0; i < searchThreadNumber; i++) {
+                searchThreadCount.getAndIncrement();
                 threadPoolUtil.executeTask(() -> {
-                    taskHandler.accept(taskQueue);
-                    //自身任务已经完成，开始扫描其他线程的任务
-                    for (var otherTaskQueue : taskQueues) {
-                        taskHandler.accept(otherTaskQueue);
+                    try {
+                        taskHandler.accept(taskQueue);
+                        //自身任务已经完成，开始扫描其他线程的任务
+                        for (var otherTaskQueue : taskQueues) {
+                            taskHandler.accept(otherTaskQueue);
+                        }
+                    } finally {
+                        countDownLatch.countDown();
+                        searchThreadCount.getAndDecrement();
                     }
                 });
             }
@@ -1003,7 +989,7 @@ public class DatabaseService {
 //                }
 //            }));
 //        }
-        waitForTasks(searchTask);
+        waitForTasks(searchTask, countDownLatch);
     }
 
     /**
@@ -2270,14 +2256,12 @@ public class DatabaseService {
      * <p>
      * taskStatus和allTaskStatus是每个任务的标志，每个任务分配一个位，当某一个任务完成，在taskStatus上该任务的位将会被设置为1
      * 当taskstauts和allTaskStatus相等则表示任务全部完成
-     * @see #waitForTasks(SearchTask)
+     * @see #waitForTasks(SearchTask, CountDownLatch)
      */
     @RequiredArgsConstructor
     public static class SearchTask {
         //taskMap任务队列，key为磁盘盘符，value为任务
         private final ConcurrentHashMap<String, ConcurrentLinkedQueue<Runnable>> taskMap = new ConcurrentHashMap<>();
-        private final Bit taskStatus = new Bit(new byte[]{0});
-        private final Bit allTaskStatus = new Bit(new byte[]{0});
         private final SearchInfo searchInfo;
         @Getter
         private final ConcurrentLinkedQueue<String> tempResults = new ConcurrentLinkedQueue<>();
