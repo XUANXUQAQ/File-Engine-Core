@@ -31,7 +31,7 @@ mvn clean compile package
 ```bash
 native-image --no-fallback -Dorg.sqlite.lib.exportPath=./outDir -H:Path=./outDir -jar File-Engine-Core.jar -H:+JNI -R:MaxHeapSize=512M -R:MinHeapSize=32M -H:+UseCompressedReferences -R:MaxHeapFree=16777216
 ```
-最后再outDir下将会得到File-Engine-Core.exe，sqlitejdbc.dll可以删除。
+最后在outDir下将会得到File-Engine-Core.exe，sqlitejdbc.dll可以删除。
 
 ## 💖感谢以下项目：
 
