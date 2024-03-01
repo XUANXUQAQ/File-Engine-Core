@@ -801,7 +801,6 @@ public class DatabaseService {
                                      SearchTask searchTask) {
         tasks.add(() -> {
             String diskStr = String.valueOf(diskChar.charAt(0));
-            PathMatcher.INSTANCE.openConnection(SQLiteUtil.getDbAbsolutePath(diskStr));
             for (var sqlAndTableName : sqlToExecute.entrySet()) {
                 String eachSql = sqlAndTableName.getKey();
                 String tableName = sqlAndTableName.getValue();
@@ -823,6 +822,7 @@ public class DatabaseService {
                         recordsNum = databaseResultsCount.get(key).get();
                     }
                     if (recordsNum != 0) {
+                        PathMatcher.INSTANCE.openConnection(SQLiteUtil.getDbAbsolutePath(diskStr));
                         matchedNum = fallbackToSearchDatabase(searchTask, diskStr, eachSql, key);
                     }
                 }
