@@ -41,7 +41,7 @@ public class Core {
         var allConfigs = AllConfigs.getInstance();
         var databaseService = DatabaseService.getInstance();
         var eventManager = EventManagement.getInstance();
-        var app = Javalin.create(config -> config.jsonMapper(new JavalinGson(GsonUtil.INSTANCE.getGson())))
+        var app = Javalin.create(config -> config.jsonMapper(new JavalinGson(GsonUtil.INSTANCE.getGson(), true)))
                 .exception(Exception.class, (e, ctx) -> log.error("error {}, ", e.getMessage(), e))
                 .error(HttpStatus.NOT_FOUND, ctx -> ctx.json("not found"))
                 .get("/config", ctx -> ctx.json(AllConfigs.getInstance().getConfigEntity()))
@@ -157,7 +157,7 @@ public class Core {
     @EventListener(listenClass = CloseEvent.class)
     private static void close(Event event) {
         if (server != null) {
-            server.close();
+            server.stop();
         }
     }
 
@@ -225,18 +225,16 @@ public class Core {
                                            HashMap<String, Object> retWrapper,
                                            ConcurrentLinkedQueue<String> tempResults) {
         retWrapper.put("uuid", searchTask.getUuid().toString());
-        Iterator<String> iterator = tempResults.iterator();
-        for (int i = 0; i < startIndex; i++) {
-            if (iterator.hasNext()) {
-                iterator.next();
-            } else {
-                startIndex = i;
-                break;
+        int count = 0;
+        var list = new ArrayList<String>();
+        for (String tempResult : tempResults) {
+            if (count >= startIndex) {
+                list.add(tempResult);
             }
+            ++count;
         }
-        ArrayList<String> list = new ArrayList<>();
-        while (iterator.hasNext()) {
-            list.add(iterator.next());
+        if (count < startIndex) {
+            startIndex = count;
         }
         retWrapper.put("data", list);
         retWrapper.put("nextIndex", list.size() + startIndex);
