@@ -714,9 +714,6 @@ public class DatabaseService {
         }
     }
 
-    /**
-     * 根据上面分配的位信息，从第二位开始，与taskStatus做与运算，并向右偏移，若结果为1，则表示该任务完成
-     */
     private void waitForTasks(SearchTask searchTask, CountDownLatch countDownLatch) {
         try {
             if (!countDownLatch.await(60, TimeUnit.SECONDS)) {
@@ -945,31 +942,25 @@ public class DatabaseService {
                 }
             }
         };
-//        var taskQueues = searchTask.taskMap.values();
-//        for (var taskQueue : taskQueues) {
-//            int searchThreadNumber = AllConfigs.getInstance().getConfigEntity().getSearchThreadNumber();
-//            for (int i = 0; i < searchThreadNumber; i++) {
-//                threadPoolUtil.executeTask(() -> {
-//                    taskHandler.accept(taskQueue);
-//                    //自身任务已经完成，开始扫描其他线程的任务
-//                    for (var otherTaskQueue : taskQueues) {
-//                        taskHandler.accept(otherTaskQueue);
-//                    }
-//                });
-//            }
-//        }
 
         int diskNumber = searchTask.taskMap.size();
         int searchThreadNumber = AllConfigs.getInstance().getConfigEntity().getSearchThreadNumber();
+        var countDownLatch = new CountDownLatch(searchThreadNumber);
         int threadNumberPerDisk = Math.max(1, searchThreadNumber / diskNumber);
         var taskQueues = searchTask.taskMap.values();
         for (var taskQueue : taskQueues) {
             for (int i = 0; i < threadNumberPerDisk; i++) {
                 threadPoolUtil.executeTask(() -> {
-                    taskHandler.accept(taskQueue);
-                    //自身任务已经完成，开始扫描其他线程的任务
-                    for (var otherTaskQueue : taskQueues) {
-                        taskHandler.accept(otherTaskQueue);
+                    try {
+                        searchThreadCount.getAndIncrement();
+                        taskHandler.accept(taskQueue);
+                        //自身任务已经完成，开始扫描其他线程的任务
+                        for (var otherTaskQueue : taskQueues) {
+                            taskHandler.accept(otherTaskQueue);
+                        }
+                    } finally {
+                        countDownLatch.countDown();
+                        searchThreadCount.getAndDecrement();
                     }
                 });
             }
@@ -977,12 +968,18 @@ public class DatabaseService {
         int remainThreads = searchThreadNumber - threadNumberPerDisk * diskNumber;
         for (int i = 0; i < remainThreads; i++) {
             threadPoolUtil.executeTask((() -> {
-                for (var taskQueue : taskQueues) {
-                    taskHandler.accept(taskQueue);
+                try {
+                    searchThreadCount.getAndIncrement();
+                    for (var taskQueue : taskQueues) {
+                        taskHandler.accept(taskQueue);
+                    }
+                } finally {
+                    countDownLatch.countDown();
+                    searchThreadCount.getAndDecrement();
                 }
             }));
         }
-        waitForTasks(searchTask);
+        waitForTasks(searchTask, countDownLatch);
     }
 
     /**

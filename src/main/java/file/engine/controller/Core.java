@@ -20,7 +20,6 @@ import file.engine.utils.gson.GsonUtil;
 import io.javalin.Javalin;
 import io.javalin.http.HttpStatus;
 import io.javalin.json.JavalinGson;
-import io.javalin.util.ConcurrencyUtil;
 import io.javalin.util.JavalinLogger;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,11 +36,12 @@ public class Core {
     @EventListener(listenClass = BootSystemEvent.class)
     private static void startServer(Event event) {
         JavalinLogger.enabled = false;
-        ConcurrencyUtil.INSTANCE.setUseLoom(false);
-        var allConfigs = AllConfigs.getInstance();
         var databaseService = DatabaseService.getInstance();
         var eventManager = EventManagement.getInstance();
-        var app = Javalin.create(config -> config.jsonMapper(new JavalinGson(GsonUtil.INSTANCE.getGson(), true)))
+        var app = Javalin.create(config -> {
+                    config.useVirtualThreads = false;
+                    config.jsonMapper(new JavalinGson(GsonUtil.INSTANCE.getGson(), false));
+                })
                 .exception(Exception.class, (e, ctx) -> log.error("error {}, ", e.getMessage(), e))
                 .error(HttpStatus.NOT_FOUND, ctx -> ctx.json("not found"))
                 .get("/config", ctx -> ctx.json(AllConfigs.getInstance().getConfigEntity()))
