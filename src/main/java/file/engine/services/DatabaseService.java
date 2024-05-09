@@ -833,7 +833,7 @@ public class DatabaseService {
         Cache cache = tableCache.get(key);
         if (cache != null && cache.isCacheValid()) {
             if (IsDebug.isDebug()) {
-                log.info("从缓存中读取 " + key);
+                log.info("从缓存中读取 {}", key);
             }
             matchedNum = cache.data.parallelStream().filter(s -> checkIsMatchedAndAddToList(s, searchTask)).count();
         } else {
@@ -933,16 +933,20 @@ public class DatabaseService {
         var eventManagement = EventManagement.getInstance();
         var threadPoolUtil = ThreadPoolUtil.getInstance();
         Consumer<ConcurrentLinkedQueue<Runnable>> taskHandler = (taskQueue) -> {
+            ArrayList<CompletableFuture<Void>> futures = new ArrayList<>();
             while (!taskQueue.isEmpty() && eventManagement.notMainExit()) {
                 var runnable = taskQueue.poll();
                 if (runnable == null) {
                     continue;
                 }
-                try {
-                    runnable.run();
-                } catch (Exception e) {
-                    log.error("error: {}", e.getMessage(), e);
-                }
+                CompletableFuture<Void> future = CompletableFuture.runAsync(runnable, threadPoolUtil.getVirtualThreadPool());
+                futures.add(future);
+            }
+            try {
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
+            } catch (InterruptedException | ExecutionException e) {
+                log.error(e.getMessage(), e);
+                throw new RuntimeException(e);
             }
         };
         var taskQueues = searchTask.taskMap.values();
@@ -965,30 +969,6 @@ public class DatabaseService {
                 });
             }
         }
-
-//        int diskNumber = searchTask.taskMap.size();
-//        int searchThreadNumber = AllConfigs.getInstance().getConfigEntity().getSearchThreadNumber();
-//        int threadNumberPerDisk = Math.max(1, searchThreadNumber / diskNumber);
-//        var taskQueues = searchTask.taskMap.values();
-//        for (var taskQueue : taskQueues) {
-//            for (int i = 0; i < threadNumberPerDisk; i++) {
-//                threadPoolUtil.executeTask(() -> {
-//                    taskHandler.accept(taskQueue);
-//                    //自身任务已经完成，开始扫描其他线程的任务
-//                    for (var otherTaskQueue : taskQueues) {
-//                        taskHandler.accept(otherTaskQueue);
-//                    }
-//                });
-//            }
-//        }
-//        int remainThreads = searchThreadNumber - threadNumberPerDisk * diskNumber;
-//        for (int i = 0; i < remainThreads; i++) {
-//            threadPoolUtil.executeTask((() -> {
-//                for (var taskQueue : taskQueues) {
-//                    taskHandler.accept(taskQueue);
-//                }
-//            }));
-//        }
         waitForTasks(searchTask, countDownLatch);
     }
 

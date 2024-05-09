@@ -222,16 +222,22 @@ public class Core {
                                            HashMap<String, Object> retWrapper,
                                            ConcurrentLinkedQueue<String> tempResults) {
         retWrapper.put("uuid", searchTask.getUuid().toString());
-        int count = 0;
-        var list = new ArrayList<String>();
-        for (String tempResult : tempResults) {
-            if (count >= startIndex) {
-                list.add(tempResult);
+        ArrayList<String> list = new ArrayList<>();
+        if (startIndex != 0) {
+            Iterator<String> iterator = tempResults.iterator();
+            for (int i = 0; i < startIndex; i++) {
+                if (iterator.hasNext()) {
+                    iterator.next();
+                } else {
+                    startIndex = i;
+                    break;
+                }
             }
-            ++count;
-        }
-        if (count < startIndex) {
-            startIndex = count;
+            while (iterator.hasNext()) {
+                list.add(iterator.next());
+            }
+        } else {
+            list.addAll(tempResults);
         }
         retWrapper.put("data", list);
         retWrapper.put("nextIndex", list.size() + startIndex);

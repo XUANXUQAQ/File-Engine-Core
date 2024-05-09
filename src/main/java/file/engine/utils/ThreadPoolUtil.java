@@ -1,6 +1,7 @@
 package file.engine.utils;
 
 import file.engine.configs.Constants;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.*;
@@ -9,7 +10,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public enum ThreadPoolUtil {
     INSTANCE;
+    @Getter
     private final ExecutorService cachedThreadPool;
+    @Getter
     private final ExecutorService virtualThreadPool;
     private final AtomicBoolean isShutdown = new AtomicBoolean(false);
 
