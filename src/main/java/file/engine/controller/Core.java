@@ -224,13 +224,13 @@ public class Core {
         retWrapper.put("uuid", searchTask.getUuid().toString());
         ConcurrentLinkedQueue<String> list = new ConcurrentLinkedQueue<>();
         if (startIndex != 0) {
-            var counter = new Object() {
-                int i = 0;
-            };
-            resultsContainer.parallelStream().dropWhile(e -> counter.i < startIndex).forEach(e -> {
-                list.add(e);
-                ++counter.i;
-            });
+            int i = 0;
+            for (String e : resultsContainer) {
+                if (i >= startIndex) {
+                    list.add(e);
+                }
+                ++i;
+            }
         } else {
             list.addAll(resultsContainer);
         }
