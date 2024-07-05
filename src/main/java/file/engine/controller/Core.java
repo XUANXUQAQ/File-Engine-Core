@@ -220,24 +220,19 @@ public class Core {
     private static void genSearchResultMap(int startIndex,
                                            DatabaseService.SearchTask searchTask,
                                            HashMap<String, Object> retWrapper,
-                                           ConcurrentLinkedQueue<String> tempResults) {
+                                           ConcurrentLinkedQueue<String> resultsContainer) {
         retWrapper.put("uuid", searchTask.getUuid().toString());
-        ArrayList<String> list = new ArrayList<>();
+        ConcurrentLinkedQueue<String> list = new ConcurrentLinkedQueue<>();
         if (startIndex != 0) {
-            Iterator<String> iterator = tempResults.iterator();
-            for (int i = 0; i < startIndex; i++) {
-                if (iterator.hasNext()) {
-                    iterator.next();
-                } else {
-                    startIndex = i;
-                    break;
-                }
-            }
-            while (iterator.hasNext()) {
-                list.add(iterator.next());
-            }
+            var counter = new Object() {
+                int i = 0;
+            };
+            resultsContainer.parallelStream().dropWhile(e -> counter.i < startIndex).forEach(e -> {
+                list.add(e);
+                ++counter.i;
+            });
         } else {
-            list.addAll(tempResults);
+            list.addAll(resultsContainer);
         }
         retWrapper.put("data", list);
         retWrapper.put("nextIndex", list.size() + startIndex);
