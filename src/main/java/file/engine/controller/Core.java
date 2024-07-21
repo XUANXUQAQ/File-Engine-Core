@@ -223,18 +223,19 @@ public class Core {
     private static void genSearchResultMap(int startIndex,
                                            DatabaseService.SearchTask searchTask,
                                            HashMap<String, Object> retWrapper,
-                                           ConcurrentLinkedQueue<String> tempResults) {
+                                           ConcurrentLinkedQueue<String> resultsContainer) {
         retWrapper.put("uuid", searchTask.getUuid().toString());
-        int count = 0;
-        var list = new ArrayList<String>();
-        for (String tempResult : tempResults) {
-            if (count >= startIndex) {
-                list.add(tempResult);
+        ConcurrentLinkedQueue<String> list = new ConcurrentLinkedQueue<>();
+        if (startIndex != 0) {
+            int i = 0;
+            for (String e : resultsContainer) {
+                if (i >= startIndex) {
+                    list.add(e);
+                }
+                ++i;
             }
-            ++count;
-        }
-        if (count < startIndex) {
-            startIndex = count;
+        } else {
+            list.addAll(resultsContainer);
         }
         retWrapper.put("data", list);
         retWrapper.put("nextIndex", list.size() + startIndex);

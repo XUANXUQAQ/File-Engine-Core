@@ -830,7 +830,7 @@ public class DatabaseService {
         Cache cache = tableCache.get(key);
         if (cache != null && cache.isCacheValid()) {
             if (IsDebug.isDebug()) {
-                log.info("从缓存中读取 " + key);
+                log.info("从缓存中读取 {}", key);
             }
             matchedNum = cache.data.parallelStream().filter(s -> checkIsMatchedAndAddToList(s, searchTask)).count();
         } else {

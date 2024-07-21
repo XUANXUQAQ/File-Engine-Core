@@ -29,7 +29,7 @@ void init_tables(sqlite3* db)
 /**
  * 开始搜索
  */
-void init_usn(parameter p)
+void start_search(parameter p)
 {
     init_tables(p.db);
     volume volume_instance(p.disk, p.db, &p.ignorePath, &suffix_priority_map);
@@ -192,7 +192,7 @@ int main()
             sqlite3_exec(p.db, "PRAGMA page_size=65535;", nullptr, nullptr, nullptr);
             sqlite3_exec(p.db, "PRAGMA auto_vacuum=0;", nullptr, nullptr, nullptr);
             sqlite3_exec(p.db, "PRAGMA mmap_size=4096;", nullptr, nullptr, nullptr);
-            threads.emplace_back(init_usn, p);
+            threads.emplace_back(start_search, p);
         }
     }
     //等待数据库写入
