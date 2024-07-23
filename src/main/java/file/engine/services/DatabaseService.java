@@ -1914,6 +1914,17 @@ public class DatabaseService {
         }
         if (databaseService.databaseCacheMap.size() < AllConfigs.getInstance().getConfigEntity().getCacheNumLimit()) {
             databaseService.addFileToCache(path);
+        } else {
+            try (Statement statement = SQLiteUtil.getStatement("cache");
+                 ResultSet resultSet = statement.executeQuery("select cache.PATH, COUNT from cache left join statistics s on cache.PATH = s.PATH order by COUNT limit 1;")) {
+                if (resultSet.next()) {
+                    String eachLine = resultSet.getString("PATH");
+                    databaseService.removeFileFromCache(eachLine);
+                }
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            }
+            databaseService.addFileToCache(path);
         }
     }
 
