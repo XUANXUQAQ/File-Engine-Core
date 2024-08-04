@@ -11,6 +11,7 @@ import file.engine.event.handler.impl.database.CheckDatabaseEmptyEvent;
 import file.engine.event.handler.impl.database.InitializeDatabaseEvent;
 import file.engine.event.handler.impl.database.UpdateDatabaseEvent;
 import file.engine.event.handler.impl.monitor.disk.StartMonitorDiskEvent;
+import file.engine.event.handler.impl.process.CheckParentProcessEvent;
 import file.engine.services.DatabaseService;
 import file.engine.utils.Md5Util;
 import file.engine.utils.clazz.scan.ClassScannerUtil;
@@ -34,8 +35,8 @@ public class MainClass {
         if (args.length != 1) {
             throw new RuntimeException("Please specify a port");
         }
-        int port = Integer.parseInt(args[0]);
         try {
+            int port = Integer.parseInt(args[0]);
             setSystemProperties();
 
             if (!System.getProperty("os.arch").contains("64")) {
@@ -54,6 +55,9 @@ public class MainClass {
             checkConfigs();
             initDatabase();
             monitorDisks();
+            if ("true".equalsIgnoreCase(System.getProperty("File_Engine_Check_Parent_Process"))) {
+                checkForParentProcess();
+            }
             // 初始化全部完成，发出启动系统事件
             if (sendBootSystemSignal(port)) {
                 throw new RuntimeException("Boot System Failed");
@@ -81,6 +85,11 @@ public class MainClass {
         System.setProperty("file.encoding", "UTF-8");
         System.setProperty("org.sqlite.lib.path", new File("").getAbsolutePath());
         System.setProperty("org.sqlite.lib.name", "sqliteJDBC.dll");
+    }
+
+    private static void checkForParentProcess() {
+        EventManagement eventManagement = EventManagement.getInstance();
+        eventManagement.putEvent(new CheckParentProcessEvent());
     }
 
     private static void monitorDisks() {
@@ -254,6 +263,7 @@ public class MainClass {
         checkMd5AndReplace("cudart64_110.dll", "/win32-native/cudart64_110.dll");
         checkMd5AndReplace("cudart64_12.dll", "/win32-native/cudart64_12.dll");
         checkMd5AndReplace("pathMatcher.dll", "/win32-native/pathMatcher.dll");
+        checkMd5AndReplace("parentProcessCheck.dll", "/win32-native/parentProcessCheck.dll");
     }
 
     private static void checkMd5AndReplace(String path, String rootPath) throws IOException {

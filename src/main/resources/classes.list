@@ -2,3 +2,4 @@ file.engine.controller.Core
 file.engine.services.DatabaseService
 file.engine.configs.AllConfigs
 file.engine.services.DatabaseService$GPUCacheService
+file.engine.services.DaemonService
