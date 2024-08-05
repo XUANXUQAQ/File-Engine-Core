@@ -33,23 +33,22 @@ JNIEXPORT jboolean JNICALL Java_file_engine_dllInterface_ParentProcessCheck_isPa
 
     if (Process32First(h, &pe))
     {
-        DWORD ppid = 0;
-        std::set<DWORD> process_set;
         do
         {
-            process_set.insert(pe.th32ProcessID);
             if (pe.th32ProcessID == pid)
             {
-                ppid = pe.th32ParentProcessID;
-            }
-            if (ppid != 0)
-            {
-                const auto&& ppid_iter = process_set.find(ppid);
-                if (ppid_iter != process_set.end())
+                const auto ppid = pe.th32ParentProcessID;
+                // get process handle
+                const auto&& p_handle = OpenProcess(PROCESS_QUERY_INFORMATION, false, ppid);
+                if (p_handle == nullptr)
                 {
-                    CloseHandle(h);
-                    return true;
+                    return false;
                 }
+                DWORD exit_code{};
+                // check for status
+                const bool still_exist = GetExitCodeProcess(p_handle, &exit_code) &&
+                    exit_code == STILL_ACTIVE;
+                return still_exist;
             }
         }
         while (Process32Next(h, &pe));

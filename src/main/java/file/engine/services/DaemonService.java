@@ -21,6 +21,7 @@ public class DaemonService {
             while (eventManagement.notMainExit()) {
                 boolean parentProcessExist = ParentProcessCheck.INSTANCE.isParentProcessExist();
                 if (!parentProcessExist) {
+                    log.info("父进程不存在，即将退出");
                     eventManagement.putEvent(new CloseEvent());
                     return;
                 }

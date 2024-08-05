@@ -47,7 +47,7 @@ public class MainClass {
             initFoldersAndFiles();
             releaseAllDependence();
             Class.forName("org.sqlite.JDBC");
-            initializeDllInterface();
+
             initEventManagement();
             //清空tmp
             FileUtil.deleteDir(new File("tmp"));
@@ -56,6 +56,7 @@ public class MainClass {
             initDatabase();
             monitorDisks();
             if ("true".equalsIgnoreCase(System.getProperty("File_Engine_Check_Parent_Process"))) {
+                log.info("正在检测父进程是否存在");
                 checkForParentProcess();
             }
             // 初始化全部完成，发出启动系统事件
@@ -68,17 +69,6 @@ public class MainClass {
             log.error("error: {}", e.getMessage(), e);
             System.exit(-1);
         }
-    }
-
-    /**
-     * 加载本地释放的dll
-     *
-     * @throws ClassNotFoundException 加载失败
-     */
-    private static void initializeDllInterface() throws ClassNotFoundException {
-        Class.forName("file.engine.dllInterface.FileMonitor");
-        Class.forName("file.engine.dllInterface.IsLocalDisk");
-        Class.forName("file.engine.dllInterface.WindowCheck");
     }
 
     private static void setSystemProperties() {
@@ -273,7 +263,7 @@ public class MainClass {
             String md5InsideJar = Md5Util.getMD5(insideJar);
             if (!target.exists() || !md5InsideJar.equals(fileMd5)) {
                 if (IsDebug.isDebug()) {
-                    log.info("正在重新释放文件：" + path);
+                    log.info("正在重新释放文件：{}", path);
                 }
                 FileUtil.copyFile(MainClass.class.getResourceAsStream(rootPath), target);
             }
