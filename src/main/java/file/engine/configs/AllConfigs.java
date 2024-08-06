@@ -20,12 +20,14 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -37,8 +39,25 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AllConfigs {
     private volatile ConfigEntity configEntity;
     private static volatile AllConfigs instance = null;
+    @Getter
+    private static String version = "0";
+    @Getter
+    private static String buildVersion = "0";
 
     private AllConfigs() {
+        if (!IsDebug.isDebug()) {
+            /*
+             * 读取maven自动生成的版本信息
+             */
+            Properties properties = new Properties();
+            try (InputStream projectInfo = Constants.class.getResourceAsStream("/project-info.properties")) {
+                properties.load(projectInfo);
+                version = properties.getProperty("project.version");
+                buildVersion = properties.getProperty("project.build.version");
+            } catch (Exception e) {
+                log.error("error: {}", e.getMessage(), e);
+            }
+        }
     }
 
     public static AllConfigs getInstance() {

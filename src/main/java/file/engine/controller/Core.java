@@ -145,7 +145,9 @@ public class Core {
                 .put("/suffixPriority", ctx -> eventManager.putEvent(new UpdateSuffixPriorityEvent(
                         ctx.queryParam("oldSuffix"), ctx.queryParam("newSuffix"), Integer.parseInt(Objects.requireNonNull(ctx.queryParam("priority")))
                 )))
-                .delete("/clearSuffixPriority", ctx -> eventManager.putEvent(new ClearSuffixPriorityMapEvent()));
+                .delete("/clearSuffixPriority", ctx -> eventManager.putEvent(new ClearSuffixPriorityMapEvent()))
+                .get("/version", ctx -> ctx.result(AllConfigs.getVersion()))
+                .get("/buildVersion", ctx -> ctx.result(AllConfigs.getBuildVersion()));
         server = app;
         app.start(((BootSystemEvent) event).port);
         startClearTaskThread();
