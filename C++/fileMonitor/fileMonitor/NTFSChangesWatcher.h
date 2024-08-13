@@ -41,7 +41,7 @@ private:
 
     std::unique_ptr<READ_USN_JOURNAL_DATA> GetReadJournalQuery(USN low_usn) const;
 
-    void showRecord(std::u16string& full_path, USN_RECORD* record);
+    void show_record(std::u16string& full_path, USN_RECORD* record);
 
     static std::u16string GetFilename(USN_RECORD* record);
 

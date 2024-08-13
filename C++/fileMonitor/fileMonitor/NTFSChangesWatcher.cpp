@@ -244,39 +244,36 @@ USN NTFSChangesWatcher::ReadChangesAndNotify(USN low_usn,
         {
             continue;
         }
-        if ((reason & USN_REASON_FILE_CREATE) && (reason & USN_REASON_CLOSE))
+        if ((reason & USN_REASON_FILE_DELETE) && (reason & USN_REASON_CLOSE))
         {
-            showRecord(full_path, record);
-            if (full_path.find(recycle_bin_u16) == std::u16string::npos)
-            {
-                file_added_callback_func(full_path);
-            }
-        }
-        else if ((reason & USN_REASON_FILE_DELETE) && (reason & USN_REASON_CLOSE))
-        {
-            showRecord(full_path, record);
+            show_record(full_path, record);
             if (full_path.find(recycle_bin_u16) == std::u16string::npos)
             {
                 file_removed_callback_func(full_path);
             }
         }
-        else if (reason & FILE_CHANGE_BITMASK)
+        else if ((reason & USN_REASON_RENAME_NEW_NAME) && (reason & USN_REASON_CLOSE))
         {
-            if (reason & USN_REASON_RENAME_OLD_NAME)
+            show_record(full_path, record);
+            if (full_path.find(recycle_bin_u16) == std::u16string::npos)
             {
-                showRecord(full_path, record);
-                if (full_path.find(recycle_bin_u16) == std::u16string::npos)
-                {
-                    file_removed_callback_func(full_path);
-                }
+                file_added_callback_func(full_path);
             }
-            else if (reason & USN_REASON_RENAME_NEW_NAME)
+        }
+        else if ((reason & USN_REASON_FILE_CREATE) && (reason & USN_REASON_CLOSE))
+        {
+            show_record(full_path, record);
+            if (full_path.find(recycle_bin_u16) == std::u16string::npos)
             {
-                showRecord(full_path, record);
-                if (full_path.find(recycle_bin_u16) == std::u16string::npos)
-                {
-                    file_added_callback_func(full_path);
-                }
+                file_added_callback_func(full_path);
+            }
+        }
+        else if (reason & USN_REASON_RENAME_OLD_NAME)
+        {
+            show_record(full_path, record);
+            if (full_path.find(recycle_bin_u16) == std::u16string::npos)
+            {
+                file_removed_callback_func(full_path);
             }
         }
     }
@@ -363,7 +360,7 @@ std::u16string NTFSChangesWatcher::GetFilename(USN_RECORD* record)
  * \param full_path 输出完整路径
  * \param record 需要转换的usn record
  */
-void NTFSChangesWatcher::showRecord(std::u16string& full_path, USN_RECORD* record)
+void NTFSChangesWatcher::show_record(std::u16string& full_path, USN_RECORD* record)
 {
     cache_map_t temp_usn_cache;
 
