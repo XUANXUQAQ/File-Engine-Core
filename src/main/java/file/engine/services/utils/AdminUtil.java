@@ -25,7 +25,6 @@ public class AdminUtil {
                         String nextLine = scanner.nextLine();
                         if (printedErrorLevel) {
                             int errorLevel = Integer.parseInt(nextLine);
-                            scanner.close();
                             return errorLevel == 0;
                         } else if ("echo %errorlevel%".equals(nextLine)) {
                             printedErrorLevel = true;
