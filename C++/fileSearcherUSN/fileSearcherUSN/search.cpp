@@ -9,8 +9,8 @@
 #include <algorithm>
 #include "sqlite3.h"
 #include <concurrent_unordered_set.h>
+#include <concurrent_unordered_map.h>
 #include <mutex>
-#include "ntfs.h"
 
 
 volume::volume(const char vol, sqlite3* database, std::vector<std::string>* ignore_paths, PriorityMap* priority_map)
@@ -18,6 +18,7 @@ volume::volume(const char vol, sqlite3* database, std::vector<std::string>* igno
     this->vol = vol;
     this->priority_map_ = priority_map;
     hVol = nullptr;
+    path = "";
     db = database;
     ignore_path_vector_ = ignore_paths;
 }
@@ -29,20 +30,38 @@ volume::~volume()
 
 void volume::init_volume()
 {
-    if (get_handle() && get_ntfs_volume_data())
+    if (get_handle() && create_usn() && get_usn_info() && get_usn_journal())
     {
         using namespace std;
         auto collect_internal = [this](const Frn_Pfrn_Name_Map::iterator& map_iterator)
         {
             unsigned count = 0;
             const auto& name = map_iterator->second.filename;
-            const int ascii = get_asc_ii_sum(name);
-            std::string result_path;
+            const int ascii = get_asc_ii_sum(to_utf8(wstring(name)));
+            CString result_path = _T("\0");
             get_path(map_iterator->first, result_path);
-            if (const auto record = vol + result_path; !is_ignore(record))
+            const CString record = vol + result_path;
+            if (const auto full_path = to_utf8(wstring(record)); !is_ignore(full_path))
             {
-                collect_result_to_result_map(ascii, record);
+                collect_result_to_result_map(ascii, full_path);
                 ++count;
+                // string tmp_path(full_path);
+                // size_t pos = tmp_path.find_last_of('\\');
+                // while (pos != string::npos)
+                // {
+                //     auto&& parent_path = tmp_path.substr(0, pos);
+                //     if (parent_path.length() > 2)
+                //     {
+                //         collect_result_to_result_map(get_asc_ii_sum(get_file_name(parent_path)), parent_path);
+                //         ++count;
+                //     }
+                //     else
+                //     {
+                //         break;
+                //     }
+                //     tmp_path = parent_path;
+                //     pos = tmp_path.find_last_of('\\');
+                // }
             }
             return count;
         };
@@ -389,7 +408,7 @@ int volume::get_asc_ii_sum(const std::string& name)
     return sum;
 }
 
-void volume::get_path(DWORDLONG frn, std::string& output_path)
+void volume::get_path(DWORDLONG frn, CString& output_path)
 {
     const auto end = frnPfrnNameMap.end();
     while (true)
@@ -397,10 +416,10 @@ void volume::get_path(DWORDLONG frn, std::string& output_path)
         auto it = frnPfrnNameMap.find(frn);
         if (it == end)
         {
-            output_path = ":" + output_path;
+            output_path = L":" + output_path;
             return;
         }
-        output_path = "\\" + it->second.filename + output_path;
+        output_path = _T("\\") + it->second.filename + output_path;
         frn = it->second.pfrn;
     }
 }
@@ -430,91 +449,120 @@ bool volume::get_handle()
     return false;
 }
 
-bool volume::get_ntfs_volume_data()
+bool volume::create_usn() const
 {
-    DWORD bytes_read = 0;
-    NTFS_VOLUME_DATA_BUFFER volume_data;
-    if (!DeviceIoControl(hVol,
-                         FSCTL_GET_NTFS_VOLUME_DATA,
-                         nullptr,
-                         0,
-                         &volume_data,
-                         sizeof(volume_data),
-                         &bytes_read,
-                         nullptr))
+    NTFS_VOLUME_DATA_BUFFER ntfsVolData;
+    DWORD dwWritten = 0;
+
+    if (
+        DeviceIoControl(hVol,
+                        FSCTL_GET_NTFS_VOLUME_DATA,
+                        nullptr,
+                        0,
+                        &ntfsVolData,
+                        sizeof(ntfsVolData),
+                        &dwWritten,
+                        nullptr)
+    )
     {
-        fprintf(stderr, "fileSearcherUSN: %s\n", "Failed to read NTFS volume data.");
-        CloseHandle(hVol);
-        return false;
+        return true;
     }
+    auto&& info = std::string("create usn error. Disk: ") +
+        getDiskPath() + " Error code: " + std::to_string(GetLastError());
+    fprintf(stderr, "fileSearcherUSN: %s\n", info.c_str());
+    return false;
+}
 
-    auto mft_count = volume_data.MftValidDataLength.QuadPart / volume_data.BytesPerFileRecordSegment;
-
-    NTFS_FILE_RECORD_INPUT_BUFFER input_buffer;
-    auto output_buffer_size = sizeof(NTFS_FILE_RECORD_OUTPUT_BUFFER) + volume_data.BytesPerFileRecordSegment - 1;
-    PNTFS_FILE_RECORD_OUTPUT_BUFFER output_buffer = static_cast<PNTFS_FILE_RECORD_OUTPUT_BUFFER>(
-        malloc(output_buffer_size));
-    DeviceIoControl(hVol, FSCTL_GET_NTFS_FILE_RECORD, &input_buffer, sizeof(input_buffer), output_buffer,
-                    static_cast<DWORD>(output_buffer_size), &bytes_read, nullptr);
-
-    for (DWORD index = static_cast<DWORD>(mft_count) - 1; index >= 16; --index)
+bool volume::get_usn_info()
+{
+    DWORD br;
+    if (
+        DeviceIoControl(hVol, // handle to volume
+                        FSCTL_QUERY_USN_JOURNAL, // dwIoControlCode
+                        nullptr, // lpInBuffer
+                        0, // nInBufferSize
+                        &ujd, // output buffer
+                        sizeof(ujd), // size of output buffer
+                        &br, // number of bytes returned
+                        nullptr) // OVERLAPPED structure
+    )
     {
-        input_buffer.FileReferenceNumber.LowPart = index;
-        if (!DeviceIoControl(hVol, FSCTL_GET_NTFS_FILE_RECORD, &input_buffer, sizeof(input_buffer), output_buffer,
-                             static_cast<DWORD>(output_buffer_size), &bytes_read, nullptr))
-        {
-            fprintf(stderr, "fileSearcherUSN: %s\n", "Failed to read MFT record.");
-            return false;
-        }
-
-        // 跳过空记录
-        index = output_buffer->FileReferenceNumber.LowPart;
-
-        PFILE_RECORD_SEGMENT_HEADER p_header = reinterpret_cast<PFILE_RECORD_SEGMENT_HEADER>(output_buffer->
-            FileRecordBuffer);
-        if (p_header->Flags & 0x0004) // msdn 未定义，跳过
-            continue;
-        if (!(p_header->Flags & 0x0001)) // 非标准文件
-            continue;
-        if (p_header->SequenceNumber == 0) // 过时条目
-            continue;
-
-        PATTRIBUTE_RECORD_HEADER p_attr = reinterpret_cast<PATTRIBUTE_RECORD_HEADER>(reinterpret_cast<size_t>(p_header)
-            + p_header->FirstAttributeOffset);
-        while (p_attr->TypeCode != 0xFFFFFFFF)
-        {
-            auto typeCode = p_attr->TypeCode;
-            auto resident = p_attr->FormCode;
-
-            if (resident == 0x00)
-            {
-                auto form = p_attr->Form.Resident;
-                void* ptr = reinterpret_cast<void*>(reinterpret_cast<size_t>(p_attr) + form.ValueOffset);
-
-                if (typeCode == 0x30) //$FILE_NAME
-                {
-                    if (PFILE_NAME p_file_name = static_cast<PFILE_NAME>(ptr); p_file_name->Flags & 0x01) // NTFS 长文件名
-                    {
-                        auto filename = p_file_name->FileName;
-                        auto filename_length = p_file_name->FileNameLength;
-
-                        auto parent_id = p_file_name->ParentDirectory.SegmentNumberLowPart;
-                        auto id = index;
-                        PFRN_NAME pfrn_name;
-                        pfrn_name.filename = to_utf8(std::wstring(filename, filename_length));
-                        pfrn_name.pfrn = parent_id;
-                        frnPfrnNameMap.insert(std::make_pair(id, pfrn_name));
-                    }
-                }
-            }
-
-            // next
-            p_attr = reinterpret_cast<PATTRIBUTE_RECORD_HEADER>(reinterpret_cast<size_t>(p_attr) + p_attr->
-                RecordLength);
-        }
+        return true;
     }
-    free(output_buffer);
+    auto&& info = "query usn error. Error code: " + getDiskPath() + std::to_string(GetLastError());
+    fprintf(stderr, "fileSearcherUSN: %s\n", info.c_str());
+    return false;
+}
+
+bool volume::get_usn_journal()
+{
+    MFT_ENUM_DATA med;
+    med.StartFileReferenceNumber = 0;
+    med.LowUsn = 0;
+    med.HighUsn = ujd.NextUsn;
+
+    constexpr auto BUF_LEN = sizeof(USN) + 0x100000; // 尽可能地大，提高效率;
+
+    CHAR* buffer = new CHAR[BUF_LEN];
+    DWORD usn_data_size;
+    pfrn_name pfrn_name;
+
+    while (true)
+    {
+        memset(buffer, 0, BUF_LEN);
+        if (0 == DeviceIoControl(hVol,
+                                 FSCTL_ENUM_USN_DATA,
+                                 &med,
+                                 sizeof med,
+                                 buffer,
+                                 BUF_LEN,
+                                 &usn_data_size,
+                                 nullptr))
+        {
+            break;
+        }
+        DWORD dw_ret_bytes = usn_data_size - sizeof(USN);
+        // 找到第一个 USN 记录  
+        auto usn_record = reinterpret_cast<PUSN_RECORD>(buffer + sizeof(USN));
+
+        while (dw_ret_bytes > 0)
+        {
+            // 获取到的信息  	
+            const CString cfile_name(usn_record->FileName, usn_record->FileNameLength / 2);
+            pfrn_name.filename = cfile_name;
+            pfrn_name.pfrn = usn_record->ParentFileReferenceNumber;
+            // frnPfrnNameMap[UsnRecord->FileReferenceNumber] = pfrnName;
+            frnPfrnNameMap.insert(std::make_pair(usn_record->FileReferenceNumber, pfrn_name));
+            // 获取下一个记录  
+            const auto record_len = usn_record->RecordLength;
+            dw_ret_bytes -= record_len;
+            usn_record = reinterpret_cast<PUSN_RECORD>(reinterpret_cast<PCHAR>(usn_record) + record_len);
+        }
+        // 获取下一页数据 
+        med.StartFileReferenceNumber = *reinterpret_cast<DWORDLONG*>(buffer);
+    }
+    delete[] buffer;
     return true;
+}
+
+bool volume::delete_usn() const
+{
+    DELETE_USN_JOURNAL_DATA dujd{ujd.UsnJournalID, USN_DELETE_FLAG_DELETE | USN_DELETE_FLAG_NOTIFY};
+    DWORD br;
+
+    if (DeviceIoControl(hVol,
+                        FSCTL_DELETE_USN_JOURNAL,
+                        &dujd,
+                        sizeof(dujd),
+                        nullptr,
+                        0,
+                        &br,
+                        nullptr)
+    )
+    {
+        return true;
+    }
+    return false;
 }
 
 std::string get_file_name(const std::string& path)

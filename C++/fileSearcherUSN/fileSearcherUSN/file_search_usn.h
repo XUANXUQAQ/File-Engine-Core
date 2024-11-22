@@ -10,6 +10,6 @@ using parameter = struct parameter
     sqlite3* db{nullptr};
 };
 
-void start_search(parameter p);
+void init_usn(parameter p);
 void split_string(const char* str, std::vector<std::string>& vec);
 void init_tables(sqlite3* db);

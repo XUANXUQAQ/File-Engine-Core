@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include "sqlite3.h"
 #include <winioctl.h>
+#include <concurrent_unordered_map.h>
+#include <concurrent_unordered_set.h>
 
 #define CONCURRENT_MAP concurrency::concurrent_unordered_map
 #define CONCURRENT_SET concurrency::concurrent_unordered_set
@@ -12,11 +14,11 @@
 typedef struct pfrn_name
 {
     DWORDLONG pfrn = 0;
-    std::string filename;
-} PFRN_NAME;
+    CString filename;
+} pfrn_name;
 
 typedef std::unordered_map<std::string, int> PriorityMap;
-typedef std::unordered_map<DWORDLONG, PFRN_NAME> Frn_Pfrn_Name_Map;
+typedef std::unordered_map<DWORDLONG, pfrn_name> Frn_Pfrn_Name_Map;
 
 class volume
 {
@@ -43,6 +45,7 @@ private:
     HANDLE hVol;
     Frn_Pfrn_Name_Map frnPfrnNameMap;
     sqlite3* db;
+    CString path;
     sqlite3_stmt* stmt0 = nullptr;
     sqlite3_stmt* stmt1 = nullptr;
     sqlite3_stmt* stmt2 = nullptr;
@@ -91,9 +94,12 @@ private:
     PriorityMap* priority_map_ = nullptr;
 
     bool get_handle();
-    bool get_ntfs_volume_data();
+    bool create_usn() const;
+    bool get_usn_info();
+    bool get_usn_journal();
+    bool delete_usn() const;
     void save_result(const std::string& _path, int ascii, int ascii_group, int priority) const;
-    void get_path(DWORDLONG frn, std::string& output_path);
+    void get_path(DWORDLONG frn, CString& output_path);
     static int get_asc_ii_sum(const std::string& name);
     bool is_ignore(const std::string& path) const;
     void finalize_all_statement() const;
