@@ -13,6 +13,13 @@
   <img src="https://img.shields.io/badge/documentation-yes-brightgreen"/>
 </div>
 
+# 新项目推荐 Aiverything
+使用File-Engine-Core，更易用的UI，更强大的搜索性能以及更多   
+[小众软件-Aiverything - GPU加速的文件搜索&启动工具](https://meta.appinn.net/t/topic/66229)   
+![Aiverything-LOGO](https://raw.githubusercontent.com/panwangwin/aiverything-official-forum/refs/heads/main/logo-2.png)    
+[![Aiverything](https://img.shields.io/badge/Try-Aiverything-blue?style=for-the-badge)](https://github.com/panwangwin/aiverything-official-forum)
+
+
 ## 编译该项目
 
 ---
